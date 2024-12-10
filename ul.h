@@ -9,6 +9,7 @@ typedef struct {
 	int visits;
 } Bee;
 
+
 typedef struct {
 	Bee* bees;
 	int total_bees;
@@ -22,3 +23,4 @@ typedef struct {
 } Beehive;
 
 #endif
+
