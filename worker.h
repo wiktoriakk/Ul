@@ -1,6 +1,6 @@
 #ifndef WORKER_H
 #define WORKER_H
-#include "shared.h"
+#include "main.h"
 
 void* worker_thread(void* arg);
 

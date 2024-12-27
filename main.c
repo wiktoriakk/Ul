@@ -2,6 +2,7 @@
 #include<stdlib.h>
 #include<pthread.h>
 #include"queen.h"
+#include"worker.h"
 
 //struktura pszczoly
 typedef struct {
@@ -40,7 +41,16 @@ int main() {
 		free(hive);
 		return EXIT_FAILURE;
 	}
+	pthread_t worker_thread_id;
+	if (pthread_create(&worker_thread_id, NULL, worker_thread, hive) != 0) {
+		perror("Nie udalo sie stworzyc watku robotnicy.");
+		free(hive->bees);
+		free(hive);
+		return EXIT_FAILURE;
+	}	
+
 	pthread_join(queen_thread_id, NULL);
+	pthread_join(worker_thread_id, NULL);
 	pthread_mutex_destroy(&hive->lock);
 	free(hive->bees);
 	free(hive);

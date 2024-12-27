@@ -1,28 +1,25 @@
 #include<stdio.h>
 #include<pthread.h>
 #include<unistd.h>
-#include"shared.h"
+#include"main.c"
 
 void* worker_thread(void* arg) {
 	Beehive* hive = (Beehive*)arg;
-	while(1) {
+	while(hive->queen_alive) {
 		 pthread_mutex_lock(&hive->lock);
 
-        	int alive_bees = 1; 
-		for (int i = 1; i < hive->total_bees; i++) {
+        	for (int i = 0; i < hive->total_bees; i++) {
             		hive->bees[i].age++;
-            		hive->bees[i].visits++;
-
-            		if (hive->bees[i].age <= hive->worker_lifespan) {
-                		hive->bees[alive_bees++] = hive->bees[i];
-            		} else {
+            		if (hive->bees[i].age > 10) {
 				printf("Pszczola %d umarla z powodu starosci.\n", i);
+				hive->bees[i]=hive->bees[hive->total_bees-1];
+				hive->total_bees--;
+			
 			}
 		}
-		hive->total_bees=alive_bees;
-		
+
 		pthread_mutex_unlock(&hive->lock);
-		usleep(700000);
+		sleep(1);
 	}
 
 return NULL;
