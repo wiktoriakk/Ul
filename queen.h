@@ -1,6 +1,6 @@
 #ifndef QUEEN_H
 #define QUEEN_H
-#include"shared.h"
+#include"main.h"
 
 void* queen_thread(void* arg);
 

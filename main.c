@@ -28,9 +28,10 @@ int main() {
 	hive->total_bees = initial_bees;
 	hive->max_population = max_population;
 	hive->max_bees_in_hive = max_bees_in_hive;
+	hive->queen_alive = 1;
 	pthread_mutex_init(&hive->lock, NULL);
 
-	printf("Poczatkowa liczba pszczol: %d\n", hive->total_bees);
+	//printf("Poczatkowa liczba pszczol: %d\n", hive->total_bees);
 
 	pthread_t queen_thread_id;
 	if (pthread_create(&queen_thread_id, NULL, queen_thread, hive) != 0) {
@@ -39,8 +40,7 @@ int main() {
 		free(hive);
 		return EXIT_FAILURE;
 	}
-	pthread_join(queen_thread)id, NULL);
-	
+	pthread_join(queen_thread_id, NULL);
 	pthread_mutex_destroy(&hive->lock);
 	free(hive->bees);
 	free(hive);
