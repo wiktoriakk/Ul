@@ -27,6 +27,7 @@ int main() {
 
 	Beehive* hive = malloc(sizeof(Beehive));
 	hive->bees = malloc(max_population * sizeof(Bee));
+	pthread_mutex_init(&hive->lock, NULL);
 	hive->total_bees = initial_bees;
 	hive->max_population = max_population;
 	hive->max_bees_in_hive = max_bees_in_hive;
