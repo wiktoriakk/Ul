@@ -3,6 +3,7 @@
 #include<pthread.h>
 #include"queen.h"
 #include"worker.h"
+#include"beekeeper.h"
 
 //struktura pszczoly
 typedef struct {
@@ -47,10 +48,19 @@ int main() {
 		free(hive->bees);
 		free(hive);
 		return EXIT_FAILURE;
-	}	
+	}
+
+	pthread_t beekeeper_thread_id;
+	if (pthread_create(&beekeeper_thread_id, NULL, beekeeper_thread, hive) != 0) {
+    		perror("Nie udalo sie stworzyć watku pszczelarza.");
+    		free(hive->bees);
+    		free(hive);
+    		return EXIT_FAILURE;
+	}
 
 	pthread_join(queen_thread_id, NULL);
 	pthread_join(worker_thread_id, NULL);
+	pthread_join(beekeeper_thread_id, NULL);
 	pthread_mutex_destroy(&hive->lock);
 	free(hive->bees);
 	free(hive);
