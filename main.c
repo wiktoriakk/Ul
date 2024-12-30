@@ -4,6 +4,7 @@
 #include"queen.h"
 #include"worker.h"
 #include"beekeeper.h"
+#include"monitor.h"
 
 //struktura pszczoly
 typedef struct {
@@ -58,10 +59,17 @@ int main() {
     		free(hive);
     		return EXIT_FAILURE;
 	}
+	
+	pthread_t monitor_thread_id;
+	if (pthread_create(&monitor_thread_id, NULL, monitor_thread, hive) != 0) {
+		perror("Nie udalo sie stworzyc watku monitorujacego.");
+		return EXIT_FAILURE;
+	}
 
 	pthread_join(queen_thread_id, NULL);
 	pthread_join(worker_thread_id, NULL);
 	pthread_join(beekeeper_thread_id, NULL);
+	pthread_join(monitor_thread_id, NULL);
 	pthread_mutex_destroy(&hive->lock);
 	free(hive->bees);
 	free(hive);
