@@ -6,7 +6,7 @@
 void* worker_thread(void* arg) {
 	Beehive* hive = (Beehive*)arg;
 	while(hive->queen_alive) {
-		 pthread_mutex_lock(&hive->lock);
+		sem_wait(&hive->entrance1);
 
         	for (int i = 0; i < hive->total_bees; i++) {
             		hive->bees[i].age++;
@@ -18,7 +18,7 @@ void* worker_thread(void* arg) {
 			}
 		}
 
-		pthread_mutex_unlock(&hive->lock);
+		sem_post(&hive->entrance1);
 		sleep(1);
 	}
 

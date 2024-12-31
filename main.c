@@ -5,6 +5,7 @@
 #include"worker.h"
 #include"beekeeper.h"
 #include"monitor.h"
+#include<semaphore.h>
 
 //struktura pszczoly
 typedef struct {
@@ -19,7 +20,11 @@ typedef struct {
 	int total_bees; //liczba pszczol w roju
 	int max_population; //maksymalna liczba pszczol jaka moze pomiescic ul
 	int max_bees_in_hive; //maksymalna liczba pszczol w ulu
+	int queen_alive;
+	pthread_mutex_t lock;
+	sem_t entrance1, entrance2; 
 } Beehive; 
+
 
 int main() {
 	int initial_bees = 10;
@@ -28,6 +33,8 @@ int main() {
 
 	Beehive* hive = malloc(sizeof(Beehive));
 	hive->bees = malloc(max_population * sizeof(Bee));
+	sem_init(&hive->entrance1, 0, 1);
+	sem_init(&hive->entrance2, 0, 1);
 	pthread_mutex_init(&hive->lock, NULL);
 	hive->total_bees = initial_bees;
 	hive->max_population = max_population;
