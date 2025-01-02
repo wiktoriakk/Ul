@@ -5,6 +5,7 @@
 
 void* worker_thread(void* arg) {
 	Beehive* hive = (Beehive*)arg;
+
 	while(hive->queen_alive) {
 		sem_wait(&hive->entrance1);
 		
@@ -17,8 +18,8 @@ void* worker_thread(void* arg) {
 			}
 		}
             		hive->bees[i].age++;
-            		if (hive->bees[i].age > 10) {
-				printf("Pszczola %d umarla z powodu starosci.\n", i);
+            		if (hive->bees[i].age > 10 || bees_in_hive> hive->max_bees_in_hive) {
+				printf("Pszczola umarla. Wiek pszczoly: %d\n", hive->bees[i].age);
 				hive->bees[i]=hive->bees[hive->total_bees-1];
 				hive->total_bees--;
 			
