@@ -1,33 +1,40 @@
 #include<stdio.h>
-#include<pthread.h>
 #include<unistd.h>
-#include"worker.c"
+#include"beehive.h"
 
 void* worker_thread(void* arg) {
 	Beehive* hive = (Beehive*)arg;
 
-	while(hive->queen_alive) {
-		sem_wait(&hive->entrance1);
-		
-		int bees_in_hive = 0;
-        	for (int i = 0; i < hive->total_bees; i++) {
-			bees_in_hive++;
-			if(bees_in_hive>hive->max_bees_in_hive) {
-				printf("Przegrzanie ula! Liczba pszczol: %d\n", bees_in_hive);
-				break;
+	while(1) {
+		pthread_mutex_lock(&hive->lock);
+
+		int alive_bees = 1;
+		int inside_hive = 0;
+
+        	for (int i = 1; i < hive->total_bees; i++) {
+			hive->bees[i].age++;
+			hive->bees[i].visits++;
+
+			if(hive->bees[i].visits >hive->max_bees_in_hive) {
+				printf("Przegrzanie ula! Pszczola %d umarla z powodu przegrzania.\n", i);
+				continue;
 			}
-		}
-            		hive->bees[i].age++;
-            		if (hive->bees[i].age > 10 || bees_in_hive> hive->max_bees_in_hive) {
-				printf("Pszczola umarla. Wiek pszczoly: %d\n", hive->bees[i].age);
-				hive->bees[i]=hive->bees[hive->total_bees-1];
-				hive->total_bees--;
 			
+			if (hive->bees[i].age<=hive->worker_lifespan) {
+
+            		hive->bees[alive_bees++] = hive->bees[i];
+			if (inside_hive < hive->max_bees_in_hive) {
+				inside_hive++;			
+			}
 			}
 		}
 
-		sem_post(&hive->entrance1);
-		sleep(1);
+		hive->total_bees=alive_bees;
+		hive->bees_in_hive=inside_hive;
+
+	pthread_mutex_unlock(&hive->lock);
+	usleep(700000);
+
 	}
 
 return NULL;
