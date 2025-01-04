@@ -15,12 +15,13 @@ void* queen_thread(void* arg) {
 		}
 
         	if (hive->total_bees < hive->max_population) {
-		int eggs;
-		for(int i=0;i<eggs && hive->total_bees<hive->max_population;i++)
+		int eggs = 5;
+		for(int i=0;i<eggs && hive->total_bees<hive->max_population;i++) {
             		hive->bees[hive->total_bees].type = 'W';
             		hive->bees[hive->total_bees].age = 0;
             		hive->bees[hive->total_bees].visits = 0;
             		hive->total_bees++;
+		}
             	printf("Krolowa sklada 5 jaj. Liczba pszczol: %d\n", hive->total_bees);
 		}
 
@@ -31,7 +32,7 @@ void* queen_thread(void* arg) {
 		}
 
         	pthread_mutex_unlock(&hive->lock);
-        	usleep(500000);
+        	usleep(1000000);
     	}
 
     return NULL;
