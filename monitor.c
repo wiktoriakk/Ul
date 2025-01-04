@@ -1,18 +1,21 @@
 #include<stdio.h>
 #include<unistd.h>
-#include"monitor.h"
+#include"beehive.h"
 
 void* monitor_thread(void* arg) {
 	Beehive* hive=(Beehive*)arg;
 	
-	while(hive->queen_alive) {
+	while(1) {
 		pthread_mutex_lock(&hive->lock);
-		printf("Stan ula:\n");
-		printf("Krolowa: %s\n", hive->queen_alive ? "zyje" : "umarla");
+
+		printf("\n--- Stan ula ---\n");
 		printf("Liczba pszczol: %d\n", hive->total_bees);
+		printf("Pszczoly w ulu: %d\n", hive->bees_in_hive);
+		printf("Krolowa zyje: %s\n", hive->queen_alive ? "TAK" : "NIE");
+		printf("Maksymalna liczba pszczol: %d\n", hive->max_population);
 
 		pthread_mutex_unlock(&hive->lock);
-		sleep(3);
+		usleep(2000000); //raport co 2 sekundy
 	}
 
 return NULL;
