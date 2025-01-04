@@ -15,7 +15,7 @@ void* worker_thread(void* arg) {
 			hive->bees[i].age++;
 			hive->bees[i].visits++;
 
-			if(hive->bees[i].visits >hive->max_bees_in_hive) {
+			if(hive->bees[i].visits >hive->worker_lifespan) {
 				printf("Przegrzanie ula! Pszczola %d umarla z powodu przegrzania.\n", i);
 				continue;
 			}
