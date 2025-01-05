@@ -21,6 +21,7 @@ int main() {
 	hive->worker_lifespan = worker_lifespan;
 	hive->bees_in_hive = 0;
 	hive->queen_alive = 1;
+	hive->frame_signal = 0;
 
 	pthread_mutex_init(&hive->lock, NULL);
 	sem_init(&entrance1, 0, 1);
@@ -31,10 +32,12 @@ int main() {
 	pthread_create(&queen, NULL, queen_thread, hive);
 	pthread_create(&workers, NULL, worker_thread, hive);
 	pthread_create(&beekeeper, NULL, beekeeper_thread, hive);
+	pthread_create(&monitor, NULL, monitor_thread, hive);
 
 	pthread_join(queen, NULL);
 	pthread_cancel(workers);
 	pthread_cancel(beekeeper);
+	pthread_cancel(monitor);
 
 	printf("\n--- Podsumowanie ---\n");
 	printf("Calkowita liczba pszczol: %d\n", hive->total_bees);
