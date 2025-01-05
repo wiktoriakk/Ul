@@ -6,6 +6,7 @@
 #define THREAD_RUNNING 1
 #define THREAD_SLEEPING 2
 #define THREAD_TERMINATED 3
+
 //struktura pszczoly
 typedef struct {
         char type; //rodzaj pszczoly: 'Q' krolowa, 'W' robotnica
@@ -17,13 +18,14 @@ typedef struct {
 typedef struct {
         Bee* bees;
         int total_bees; 
-        int max_population; 
+        int max_population;
+	int max_bees_in_hive; 
 	int queen_lifespan;
 	int worker_lifespan;
-	int max_bees_in_hive;
 	int bees_in_hive;
 	pthread_mutex_t lock;
 	int queen_alive;
+	int frame_signal; //0- bez zmiany, 1-dodanie ramek, 2-usuniecie ramek
 } Beehive;
 
 extern sem_t entrance1;
