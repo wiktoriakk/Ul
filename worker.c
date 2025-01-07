@@ -1,13 +1,21 @@
 #include<stdio.h>
 #include<unistd.h>
 #include"beehive.h"
+#include<errno.h>
 
 void* worker_thread(void* arg) {
 	Beehive* hive = (Beehive*)arg;
 
 	while(1) {
-		sem_wait(&entrance1);
-		pthread_mutex_lock(&hive->lock);
+		if (sem_wait(&entrance1) != 0) {
+			perror("sem_wait");
+			break;
+		}
+		if (pthread_mutex_lock(&hive->lock) != 0) {
+			perror("pthread_mutex_lock");
+			sem_post(&entrance1);
+			break;
+		}
 
 		int alive_bees = 0;
 		int inside_hive = 0;
@@ -45,8 +53,16 @@ void* worker_thread(void* arg) {
 		hive->total_bees=alive_bees;
 		hive->bees_in_hive=inside_hive;
 
-	pthread_mutex_unlock(&hive->lock);
-	sem_post(&entrance1);
+	if (pthread_mutex_unlock(&hive->lock) != 0) {
+		perror("pthread_mutex_unlock");
+		sem_post(&entrance1);
+		break;
+	}
+	if (sem_post(&entrance1) != 0) {
+		perror("sem_post");
+		break;
+	}
+
 	usleep(700000);
 
 	}

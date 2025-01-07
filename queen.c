@@ -1,12 +1,16 @@
 #include<stdio.h>
 #include<unistd.h>
 #include"beehive.h"
+#include<errno.h>
 
 void* queen_thread(void* arg) {
 	Beehive* hive = (Beehive*)arg;
 
 	while (1) {
-        	pthread_mutex_lock(&hive->lock);
+        	if (pthread_mutex_lock(&hive->lock) != 0) {
+			perror("pthread_mutex_lock");
+			break;
+		}
 		
 		if(!hive->queen_alive) {
 			printf("Krolowa umarla!\n");
@@ -43,7 +47,11 @@ void* queen_thread(void* arg) {
 
 		}
 
-        	pthread_mutex_unlock(&hive->lock);
+        	if (pthread_mutex_unlock(&hive->lock) != 0) {
+			perror("pthread_mutex_unlock");
+			break;
+		}
+
         	usleep(1000000);
     	}
 

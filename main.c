@@ -8,10 +8,16 @@
 #include<sys/ipc.h>
 #include<sys/shm.h>
 #include<sys/msg.h>
+#include<errno.h>
 
 Beehive* hive;
 
 sem_t entrance1, entrance2;
+
+void handle_error(const char* message) {
+	perror(message);
+	exit(EXIT_FAILURE);
+}
 
 void signal_handler(int signo) {
 	if (signo == SIGUSR1) {
@@ -44,7 +50,15 @@ int main() {
 	validate_input(initial_bees, max_population, max_bees_in_hive);
 
 	Beehive* hive = malloc(sizeof(Beehive));
+	if (!hive) {
+		handle_error("malloc");
+	}
+
 	hive->bees = malloc(max_population * sizeof(Bee));
+	if (!hive) {
+		handle_error("malloc");
+	}
+
 	hive->total_bees = initial_bees;
 	hive->max_population = max_population;
 	hive->max_bees_in_hive = max_bees_in_hive;
@@ -63,33 +77,61 @@ int main() {
 	}
 	hive->bees[0].type = 'Q';
 
-	pthread_mutex_init(&hive->lock, NULL);
-	sem_init(&entrance1, 0, 1);
-        sem_init(&entrance2, 0, 1);
-	
-	signal(SIGUSR1, signal_handler);
-	signal(SIGUSR2, signal_handler);
+	if (pthread_mutex_init(&hive->lock, NULL) != 0) {
+		handle_error("pthread_mutex_init");
+	}
+	if (sem_init(&entrance1, 0, 1) != 0 || sem_init(&entrance2, 0, 1) != 0) {
+		handle_error("sem_init");
+	}
+        
+	if (signal(SIGUSR1, signal_handler) == SIG_ERR) {
+		handle_error("signal");
+	}
+	if (signal(SIGUSR2, signal_handler) == SIG_ERR) {
+		handle_error("signal");
+	}
 
 	pthread_t queen, workers, beekeeper, monitor;
-	pthread_create(&queen, NULL, queen_thread, hive);
-	pthread_create(&workers, NULL, worker_thread, hive);
-	pthread_create(&beekeeper, NULL, beekeeper_thread, hive);
-	pthread_create(&monitor, NULL, monitor_thread, hive);
 
-	pthread_join(queen, NULL);
+	if (pthread_create(&queen, NULL, queen_thread, hive) != 0) {
+		handle_error("pthread_create");
+	}
+	if (pthread_create(&workers, NULL, worker_thread, hive) != 0) {
+		handle_error("pthread_create");
+	}
+	if (pthread_create(&beekeeper, NULL, beekeeper_thread, hive) != 0) {
+		handle_error("pthread_create");
+	}
+	if (pthread_create(&monitor, NULL, monitor_thread, hive) != 0) {
+		handle_error("pthread_create");
+	}
+
+	if (pthread_join(queen, NULL) != 0) {
+		handle_error("pthread_join");
+	}
 	
-	pthread_cancel(workers);
-	pthread_cancel(beekeeper);
-	pthread_cancel(monitor);
+	if (pthread_cancel(workers) != 0) {
+		handle_error("pthread_cancel");
+	}
+	if (pthread_cancel(beekeeper) != 0) {
+		handle_error("pthread_cancel");
+	}
+	if (pthread_cancel(monitor) != 0) {
+		handle_error("pthread_cancel");
+	}
 
 	printf("\n--- Podsumowanie ---\n");
 	printf("Calkowita liczba pszczol: %d\n", hive->total_bees);
 	printf("Krolowa: %s\n", hive->queen_alive ? "zyje" : "umarla");
 	printf("Pszczoly w ulu: %d\n", hive->bees_in_hive);
 
-	pthread_mutex_destroy(&hive->lock);
-	sem_destroy(&entrance1);
-	sem_destroy(&entrance2);
+	if (pthread_mutex_destroy(&hive->lock) != 0) {
+		handle_error("pthread_mutex_destroy");
+	}
+	if (sem_destroy(&entrance1) != 0 || sem_destroy(&entrance2) != 0) {
+        handle_error("sem_destroy");
+    	}
+
 	free(hive->bees);
 	free(hive);
 
