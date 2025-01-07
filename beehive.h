@@ -12,6 +12,7 @@ typedef struct {
         char type; //rodzaj pszczoly: 'Q' krolowa, 'W' robotnica
         int age; //wiek (zycie)
         int visits; //liczba wizyt w ulu
+	int Ti; //czas pobytu w ulu
 } Bee;
 
 //struktura ula
