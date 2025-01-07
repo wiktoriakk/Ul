@@ -10,8 +10,20 @@ void* queen_thread(void* arg) {
 		
 		if(!hive->queen_alive) {
 			printf("Krolowa umarla!\n");
-			pthread_mutex_unlock(&hive->lock);
-			break;
+			for (int i=1; i<hive->total_bees; i++) {
+				if (hive->bees[i].type == 'W') {
+					hive-bees[i].type = 'Q';
+					hive->queen_alive =1;
+					hive->bees[i].age = 0;
+					printf("Nowa krolowa zostala wybrana: pszczola %d\n", i);
+					break;
+				}
+			}
+			if (!hive->queen_alive) {
+				printf("Nie ma dostepnych robotnic do wyboru nowej krolowej!\n");
+				pthread_mutex_unlock(&hive->lock);
+				break;
+			}
 		}
 
         	if (hive->total_bees < hive->max_population) {
