@@ -9,6 +9,8 @@
 #include<sys/shm.h>
 #include<sys/msg.h>
 
+Beehive* hive;
+
 sem_t entrance1, entrance2;
 
 void signal_handler(int signo) {
