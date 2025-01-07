@@ -12,7 +12,7 @@ void* queen_thread(void* arg) {
 			printf("Krolowa umarla!\n");
 			for (int i=1; i<hive->total_bees; i++) {
 				if (hive->bees[i].type == 'W') {
-					hive-bees[i].type = 'Q';
+					hive->bees[i].type = 'Q';
 					hive->queen_alive =1;
 					hive->bees[i].age = 0;
 					printf("Nowa krolowa zostala wybrana: pszczola %d\n", i);
