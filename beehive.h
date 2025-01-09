@@ -31,6 +31,7 @@ typedef struct {
 
 extern sem_t entrance1;
 extern sem_t entrance2;
+extern int running;
 
 void validate_input(int initial_bees, int max_population, int max_bees_in_hive);
 void* queen_thread(void* arg);

@@ -1,4 +1,5 @@
 #include<stdio.h>
+#include<stdlib.h>
 #include<unistd.h>
 #include"beehive.h"
 #include<errno.h>
@@ -6,15 +7,25 @@
 void* worker_thread(void* arg) {
 	Beehive* hive = (Beehive*)arg;
 
-	while(1) {
-		if (sem_wait(&entrance1) != 0) {
+	while(running) {
+		
+		sem_t* entrance = (rand() % 2 ==0) ? &entrance1 : &entrance2;
+
+		if (sem_wait(entrance) != 0) {
 			perror("sem_wait");
 			break;
 		}
 		if (pthread_mutex_lock(&hive->lock) != 0) {
 			perror("pthread_mutex_lock");
-			sem_post(&entrance1);
+			sem_post(entrance);
 			break;
+		}
+		
+		if (hive->bees_in_hive >= hive->max_bees_in_hive) {
+			pthread_mutex_unlock(&hive->lock);
+			sem_post(entrance);
+			usleep(100000);
+			continue;
 		}
 
 		int alive_bees = 0;
@@ -26,7 +37,7 @@ void* worker_thread(void* arg) {
 			hive->bees[i].visits++;
 
 			if(hive->bees[i].visits >hive->worker_lifespan) {
-				printf("Przegrzanie ula! Pszczola %d umarla z powodu przegrzania.\n", i);
+				printf("Pszczola %d umarla z powodu starosci.\n", i);
 				continue;
 			}
 			
@@ -55,10 +66,10 @@ void* worker_thread(void* arg) {
 
 	if (pthread_mutex_unlock(&hive->lock) != 0) {
 		perror("pthread_mutex_unlock");
-		sem_post(&entrance1);
+		sem_post(entrance);
 		break;
 	}
-	if (sem_post(&entrance1) != 0) {
+	if (sem_post(entrance) != 0) {
 		perror("sem_post");
 		break;
 	}
