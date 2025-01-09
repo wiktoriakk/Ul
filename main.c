@@ -41,6 +41,9 @@ void validate_input(int initial_bees, int max_population, int max_bees_in_hive) 
 		fprintf(stderr, "Blad: Maksymalna liczba pszczol w ulu nie moze przekraczac maksymalnej populacji.\n");
 		exit(EXIT_FAILURE);
 	}
+	if (max_bees_in_hive >= (initial_bees / 2)) {
+		fprintf(stderr, "Blad: Maksymalna liczba pszczol w ulu musi byc mniejsza niz polowa poczatkowej liczby pszczol.n");
+	}
 }
 
 int main() {
