@@ -6,7 +6,7 @@
 void* beekeeper_thread(void* arg) {
 	Beehive* hive=(Beehive*)arg;
 
-	while (1) {
+	while (running) {
 		if (pthread_mutex_lock(&hive->lock) != 0) {
 			perror("pthread_mutex_lock");
 			break;

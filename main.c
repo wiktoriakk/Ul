@@ -13,6 +13,7 @@
 Beehive* hive;
 
 sem_t entrance1, entrance2;
+int running = 1;
 
 void handle_error(const char* message) {
 	perror(message);
@@ -26,6 +27,8 @@ void signal_handler(int signo) {
 	} else if (signo == SIGUSR2) {
 		printf("Otrzymano sygnal SIGUSR2: Usuniecie ramek.\n");
 		hive->frame_signal = 2;
+	} else if (signo == SIGINT) {
+		running = 0;
 	}
 }
 

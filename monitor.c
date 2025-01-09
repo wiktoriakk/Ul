@@ -5,7 +5,7 @@
 void* monitor_thread(void* arg) {
 	Beehive* hive=(Beehive*)arg;
 	
-	while(1) {
+	while(running) {
 		pthread_mutex_lock(&hive->lock);
 
 		printf("\n--- Stan ula ---\n");
