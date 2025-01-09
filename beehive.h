@@ -25,8 +25,10 @@ typedef struct {
 	int worker_lifespan;
 	int bees_in_hive;
 	pthread_mutex_t lock;
+	sem_t event_semaphore;
 	int queen_alive;
 	int frame_signal; //0- bez zmiany, 1-dodanie ramek, 2-usuniecie ramek
+	int event_flag;
 } Beehive;
 
 extern sem_t entrance1;

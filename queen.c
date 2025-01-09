@@ -12,6 +12,12 @@ void* queen_thread(void* arg) {
 			break;
 		}
 		
+		while (hive->event_flag == 1) {
+			pthread_mutex_unlock(&hive->lock);
+			sem_wait(&hive->event_semaphore);
+			pthread_mutex_lock(&hive->lock);
+		}
+	
 		if(!hive->queen_alive) {
 			printf("Krolowa umarla!\n");
 			int new_queen_found = 0;
@@ -31,17 +37,22 @@ void* queen_thread(void* arg) {
 				break;
 			}
 		}
+		if (hive->total_bees >= hive->max_population / 2) {
+			printf("Krolowa nie moze zlozyc jaj: liczba pszczol osiagnela polowe maksymalnej liczby (%d).\n", hive->max_population / 2);
+		} else {
+			int eggs = (rand() % 5) + 1;
+			int allowed_eggs = (hive->max_population / 2) - hive->total_bees;
+			
+			eggs = (eggs > allowed_eggs) ? allowed_eggs : eggs;
 
-        	if (hive->total_bees < hive->max_population) {
-		int eggs = (rand() % 5) + 1;
-		for(int i=0;i<eggs && hive->total_bees<hive->max_population;i++) {
-            		hive->bees[hive->total_bees].type = 'W';
-            		hive->bees[hive->total_bees].age = 0;
-            		hive->bees[hive->total_bees].visits = 0;
-			hive->bees[hive->total_bees].Ti = 0;
-            		hive->total_bees++;
-		}
-            	printf("Krolowa zlozyla %d jaj", eggs);
+        		for(int i=0;i<eggs && hive->total_bees<hive->max_population;i++) {
+            			hive->bees[hive->total_bees].type = 'W';
+            			hive->bees[hive->total_bees].age = 0;
+            			hive->bees[hive->total_bees].visits = 0;
+				hive->bees[hive->total_bees].Ti = 0;
+            			hive->total_bees++;
+			}
+            		printf("Krolowa zlozyla %d jaj.\n", eggs);
 		}
 
 		hive->bees[0].age++;

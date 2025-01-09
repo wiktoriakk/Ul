@@ -42,14 +42,15 @@ void validate_input(int initial_bees, int max_population, int max_bees_in_hive) 
 		exit(EXIT_FAILURE);
 	}
 	if (max_bees_in_hive >= (initial_bees / 2)) {
-		fprintf(stderr, "Blad: Maksymalna liczba pszczol w ulu musi byc mniejsza niz polowa poczatkowej liczby pszczol.n");
+		fprintf(stderr, "Blad: Maksymalna liczba pszczol w ulu musi byc mniejsza niz polowa poczatkowej liczby pszczol.\n");
+		exit(EXIT_FAILURE);
 	}
 }
 
 int main() {
 	int initial_bees = 10;
 	int max_population = 50;
-	int max_bees_in_hive = 25;
+	int max_bees_in_hive = 6;
 	int queen_lifespan = 20;
 	int worker_lifespan = 10;
 
@@ -85,6 +86,9 @@ int main() {
 
 	if (pthread_mutex_init(&hive->lock, NULL) != 0) {
 		handle_error("pthread_mutex_init");
+	}
+	if (sem_init(&hive->event_semaphore, 0, 0) != 0) {
+		handle_error("sem_init");
 	}
 	if (sem_init(&entrance1, 0, 1) != 0 || sem_init(&entrance2, 0, 1) != 0) {
 		handle_error("sem_init");
@@ -135,8 +139,11 @@ int main() {
 		handle_error("pthread_mutex_destroy");
 	}
 	if (sem_destroy(&entrance1) != 0 || sem_destroy(&entrance2) != 0) {
-        handle_error("sem_destroy");
+        	handle_error("sem_destroy");
     	}
+	if (sem_destroy(&hive->event_semaphore) != 0) {
+		handle_error("sem_destroy");
+	}
 
 	free(hive->bees);
 	free(hive);
