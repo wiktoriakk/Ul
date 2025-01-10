@@ -21,15 +21,15 @@ void handle_error(const char* message) {
 }
 
 void signal_handler(int signo) {
-	if (signo == SIGUSR1) {
-		printf("Otrzymano sygnal SIGUSR1: Dodanie ramek.\n");
-		hive->frame_signal = 1;
-	} else if (signo == SIGUSR2) {
-		printf("Otrzymano sygnal SIGUSR2: Usuniecie ramek.\n");
-		hive->frame_signal = 2;
-	} else if (signo == SIGINT) {
-		running = 0;
-	}
+    if (signo == SIGUSR1) {
+        printf("Otrzymano sygnal SIGUSR1: Dodanie ramek.\n");
+        hive->frame_signal = 1;
+    } else if (signo == SIGUSR2) {
+        printf("Otrzymano sygnal SIGUSR2: Usuniecie ramek.\n");
+        hive->frame_signal = 2;
+    } else if (signo == SIGINT) {
+        running = 0;
+    }
 }
 
 void validate_input(int initial_bees, int max_population, int max_bees_in_hive) {
@@ -50,21 +50,13 @@ void validate_input(int initial_bees, int max_population, int max_bees_in_hive) 
 int main() {
 	int initial_bees = 10;
 	int max_population = 50;
-	int max_bees_in_hive = 6;
+	int max_bees_in_hive = 4;
 	int queen_lifespan = 20;
 	int worker_lifespan = 10;
 
 	validate_input(initial_bees, max_population, max_bees_in_hive);
 
-	Beehive* hive = malloc(sizeof(Beehive));
-	if (!hive) {
-		handle_error("malloc");
-	}
-
-	hive->bees = malloc(max_population * sizeof(Bee));
-	if (!hive) {
-		handle_error("malloc");
-	}
+	hive = setup_shared_memory(sizeof(Beehive));
 
 	hive->total_bees = initial_bees;
 	hive->max_population = max_population;
@@ -145,8 +137,7 @@ int main() {
 		handle_error("sem_destroy");
 	}
 
-	free(hive->bees);
-	free(hive);
+	cleanup_shared_memory(hive);
 
 	return 0;
 }

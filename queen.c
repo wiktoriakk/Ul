@@ -12,10 +12,15 @@ void* queen_thread(void* arg) {
 			break;
 		}
 		
-		while (hive->event_flag == 1) {
+		if (hive->frame_signal != 0) {
+			printf("Krolowa wstrzymuje skladanie jaj...\n");
 			pthread_mutex_unlock(&hive->lock);
-			sem_wait(&hive->event_semaphore);
-			pthread_mutex_lock(&hive->lock);
+			while (hive->frame_signal != 0) {
+				usleep(100000);
+			}
+			printf("Krolowa wznawia skladanie jaj.\n");
+			//sem_wait(&hive->event_semaphore);
+			//pthread_mutex_lock(&hive->lock);
 		}
 	
 		if(!hive->queen_alive) {
