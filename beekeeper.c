@@ -1,5 +1,8 @@
 #include<stdio.h>
 #include<unistd.h>
+#include<stdlib.h>
+#include<pthread.h>
+#include<semaphore.h>
 #include"beehive.h"
 #include<errno.h>
 
@@ -7,12 +10,12 @@ void* beekeeper_thread(void* arg) {
 	Beehive* hive=(Beehive*)arg;
 
 	while (running) {
-		if (pthread_mutex_lock(&hive->lock) != 0) {
-			perror("pthread_mutex_lock");
-			break;
-		}
+                if (pthread_mutex_lock(&hive->lock) != 0) {
+                        perror("pthread_mutex_lock");
+                        break;
+                }
 
-		if (hive->frame_signal == 1 || hive->frame_signal == 2) {
+                if (hive->frame_signal == 1 || hive->frame_signal == 2) {
                         hive->event_flag = 1;
                         if (hive->frame_signal == 1) {
                                 hive->max_population *= 2;
@@ -25,12 +28,12 @@ void* beekeeper_thread(void* arg) {
                 hive->event_flag = 0;
                 sem_post(&hive->event_semaphore);
                 }
-			
-		if (pthread_mutex_unlock(&hive->lock) != 0) {
-			perror("pthread_mutex_unlock");
-			break;
-		}
-		usleep(1000000);
-	}
-	return NULL;
+
+                if (pthread_mutex_unlock(&hive->lock) != 0) {
+                        perror("pthread_mutex_unlock");
+                        break;
+                }
+                usleep(1000000);
+        }
+        return NULL;
 }
