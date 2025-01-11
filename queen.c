@@ -39,7 +39,8 @@ void* queen_thread(void* arg) {
                         }
                         if (!new_queen_found) {
                                 printf("Brak robotnic do wyboru nowej krolowej. Ul umiera!\n");
-                                pthread_mutex_unlock(&hive->lock);
+				running = 0;
+				pthread_mutex_unlock(&hive->lock);
                                 break;
                         }
                 }

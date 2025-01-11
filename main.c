@@ -64,10 +64,10 @@ void validate_input(int initial_bees, int max_population, int max_bees_in_hive) 
 
 int main() {
         int initial_bees = 100;
-        int max_population = 500;
+        int max_population = 200;
         int max_bees_in_hive = 49;
-        int queen_lifespan = 50;
-        int worker_lifespan = 25;
+        int queen_lifespan = 10;
+        int worker_lifespan = 8;
 
         validate_input(initial_bees, max_population, max_bees_in_hive);
 
