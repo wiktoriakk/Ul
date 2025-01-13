@@ -33,6 +33,9 @@ void* worker_thread(void* arg) {
 				continue;
 			}
 			
+			if (hive->bees[i].Ti == 0) {
+				hive->bees[i].Ti = (rand() % 5 + 5) * 1000;
+			}
 			//zmniejszenie czasu wewnatrz ila
 			if (hive->bees[i].Ti>0) {
 				hive->bees[i].Ti -= 500;
