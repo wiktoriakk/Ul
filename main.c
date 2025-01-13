@@ -6,12 +6,13 @@
 #include<unistd.h>
 #include<signal.h>
 #include<errno.h>
+#include"entrances.h"
 
+//zmienne globalne
 Beehive* hive;
-
-sem_t entrance1;
-sem_t entrance2;
 int running = 1;
+Entrance entrance1;
+Entrance entrance2;
 
 void handle_error(const char* message) {
         perror(message);
@@ -62,6 +63,12 @@ void validate_input(int initial_bees, int max_population, int max_bees_in_hive) 
         }
 }
 
+void initialize_entrances() {
+    init_entrance(&entrance1);
+    init_entrance(&entrance2);
+}
+
+
 int main() {
         int initial_bees = 100;
         int max_population = 200;
@@ -86,7 +93,7 @@ int main() {
         hive->max_bees_in_hive = max_bees_in_hive;
         hive->queen_lifespan = queen_lifespan;
         hive->worker_lifespan = worker_lifespan;
-        hive->bees_in_hive = 0;
+        hive->bees_in_hive = initial_bees;
         hive->queen_alive = 1;
         hive->frame_signal = 0;
 
@@ -105,11 +112,9 @@ int main() {
         if (sem_init(&hive->event_semaphore, 0, 0) != 0) {
                 handle_error("sem_init");
         }
-        if (sem_init(&entrance1, 0, 1) != 0 || sem_init(&entrance2, 0, 1) != 0) {
-                handle_error("sem_init");
-        }
 
         setup_signal_handlers();
+	initialize_entrances();
 
         pthread_t queen, workers, beekeeper, monitor;
 
@@ -153,10 +158,12 @@ int main() {
         if (pthread_mutex_destroy(&hive->lock) != 0) {
                 handle_error("pthread_mutex_destroy");
         }
-        if (sem_destroy(&entrance1) != 0 || sem_destroy(&entrance2) != 0) {
-                handle_error("sem_destroy");
-        }
-        if (sem_destroy(&hive->event_semaphore) != 0) {
+
+    	destroy_entrance(&entrance1);
+        destroy_entrance(&entrance2);
+
+	
+	if (sem_destroy(&hive->event_semaphore) != 0) {
                 handle_error("sem_destroy");
         }
 

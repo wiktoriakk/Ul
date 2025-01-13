@@ -1,6 +1,7 @@
 #ifndef BEEHIVE_H
 #define BEEHIVE_H
 
+#include<stdbool.h>
 #include<pthread.h>
 #include<semaphore.h>
 
@@ -14,6 +15,7 @@ typedef struct {
         int age; //wiek (zycie)
         int visits; //liczba wizyt w ulu
 	int Ti; //czas pobytu w ulu
+	bool outside; //czy pszczola jest poza ulem (true-tak, false-nie)
 } Bee;
 
 //struktura ula
@@ -32,9 +34,6 @@ typedef struct {
 	int event_flag; //flaga zdarzen 0-brak zdarzenia, 1-zmiana populacji
 } Beehive;
 
-//globalne semafory i flaga oracy
-extern sem_t entrance1;
-extern sem_t entrance2;
 extern int running;
 
 //deklaracja funkcji

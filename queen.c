@@ -44,13 +44,13 @@ void* queen_thread(void* arg) {
                                 break;
                         }
                 }
-                if (hive->total_bees >= hive->max_population / 2) {
-                        printf("Krolowa nie moze zlozyc jaj: liczba pszczol osiagnela polowe maksymalnej liczby (%d).\n", hive->max_population / 2);
+
+		int available_space = hive->max_bees_in_hive - hive->bees_in_hive;
+                if (available_space <= 0) {
+                        printf("Krolowa nie moze zlozyc jaj: brak miejsca w ulu\n");
                 } else {
                         int eggs = (rand() % 5) + 1;
-                        int allowed_eggs = (hive->max_population / 2) - hive->total_bees;
-
-                        eggs = (eggs > allowed_eggs) ? allowed_eggs : eggs;
+                        eggs = (eggs > available_space) ? available_space : eggs;
 
                         for(int i=0;i<eggs && hive->total_bees<hive->max_population;i++) {
                                 hive->bees[hive->total_bees].type = 'W';
