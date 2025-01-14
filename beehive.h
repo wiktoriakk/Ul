@@ -3,7 +3,10 @@
 
 #include<stdbool.h>
 #include<pthread.h>
+#include<sys/ipc.h>
+#include<sys/sem.h>
 #include<semaphore.h>
+#include<sys/types.h>
 
 #define THREAD_RUNNING 1
 #define THREAD_SLEEPING 2
@@ -11,6 +14,7 @@
 
 //struktura pszczoly
 typedef struct {
+	int id; //identyfikator pszczoly
         char type; //rodzaj pszczoly: 'Q' krolowa, 'W' robotnica
         int age; //wiek (zycie)
         int visits; //liczba wizyt w ulu
@@ -32,6 +36,8 @@ typedef struct {
 	int queen_alive; //status zycia krolowej
 	int frame_signal; //sygnal zmiany ramek 0- bez zmiany, 1-dodanie ramek, 2-usuniecie ramek
 	int event_flag; //flaga zdarzen 0-brak zdarzenia, 1-zmiana populacji
+	sem_t worker_semaphore;
+	sem_t queen_semaphore;
 } Beehive;
 
 extern int running;

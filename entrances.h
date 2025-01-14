@@ -1,20 +1,21 @@
-#ifndef ENTRNACES_H
+#ifndef ENTRANCES_H
 #define ENTRANCES_H
 
-#include<semaphore.h>
-#include<pthread.h>
+#include <pthread.h>
+#include <stdbool.h>
 
+// Struktura wejścia do ula
 typedef struct {
-	sem_t access; // kontrola dostepu do wejscia
-	int current_direction; //0-na zewnatrz, 1 -do ula
-	int waiting_in; //liczba pszczol czekajacych na wejscie
-	int waiting_out; //liczba pszczol czekajacych na wyjscie
-	pthread_mutex_t lock;
+    pthread_mutex_t lock;   // Mutex do synchronizacji wejścia
+    pthread_cond_t cond;    // Warunek na kierunek ruchu
+    bool entry_direction;   // True = wejście, False = wyjście
+    int bees_inside;        // Liczba pszczół korzystających z wejścia
 } Entrance;
 
-void use_entrance(Entrance* entrance, int direction);
-void release_entrance(Entrance* entrance);
+// Funkcje do zarządzania wejściami
 void init_entrance(Entrance* entrance);
 void destroy_entrance(Entrance* entrance);
+void use_entrance(Entrance* entrance, bool direction, int bee_id);
 
 #endif // ENTRANCES_H
+

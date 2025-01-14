@@ -2,9 +2,12 @@
 #include<unistd.h>
 #include<stdlib.h>
 #include<pthread.h>
-#include<semaphore.h>
 #include"beehive.h"
 #include<errno.h>
+#include<sys/ipc.h>
+#include<sys/sem.h>
+#include<sys/types.h>
+#include<semaphore.h>
 
 void* beekeeper_thread(void* arg) {
 	Beehive* hive=(Beehive*)arg;
@@ -25,9 +28,12 @@ void* beekeeper_thread(void* arg) {
                                 printf("Pszczelarz usunal ramki. Maksymalna liczba pszczol: %d\n", hive->max_population);
                 }
                 hive->frame_signal = 0;
-                hive->event_flag = 0;
-                sem_post(&hive->event_semaphore);
+                if (sem_post(&hive->event_semaphore) != 0) {
+			perror("sem_post");
+			break;
                 }
+		hive->event_flag = 0;
+		}
 
                 if (pthread_mutex_unlock(&hive->lock) != 0) {
                         perror("pthread_mutex_unlock");

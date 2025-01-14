@@ -1,79 +1,53 @@
-#include<stdio.h>
-#include<semaphore.h>
-#include<pthread.h>
-#include"entrances.h"
-#include<stdlib.h>
+#include "entrances.h"
+#include <stdio.h>
+#include <unistd.h>
 
-
+// Inicjalizuje wejście do ula
 void init_entrance(Entrance* entrance) {
-    if (sem_init(&entrance->access, 0, 1) != 0) {
-        perror("sem_init");
-        exit(EXIT_FAILURE);
-    }
-    if (pthread_mutex_init(&entrance->lock, NULL) != 0) {
-        perror("pthread_mutex_init");
-        exit(EXIT_FAILURE);
-    }
-    entrance->current_direction = -1;
-    entrance->waiting_in = 0;
-    entrance->waiting_out = 0;
+    pthread_mutex_init(&entrance->lock, NULL);
+    pthread_cond_init(&entrance->cond, NULL);
+    entrance->entry_direction = true; // Domyślny kierunek: wejście
+    entrance->bees_inside = 0;
 }
 
-
-
-void use_entrance(Entrance* entrance, int direction) {
-    pthread_mutex_lock(&entrance->lock);
-
-    // Jeśli kierunek jest inny, pszczoła musi czekać
-    if (entrance->current_direction != -1 && entrance->current_direction != direction) {
-        if (direction == 1) {
-            entrance->waiting_in++;
-        } else {
-            entrance->waiting_out++;
-        }
-        pthread_mutex_unlock(&entrance->lock);
-
-        // Czekanie na zmianę kierunku
-        sem_wait(&entrance->access);
-
-        pthread_mutex_lock(&entrance->lock);
-        if (direction == 1) {
-            entrance->waiting_in--;
-        } else {
-            entrance->waiting_out--;
-        }
-    }
-
-    // Aktualizacja kierunku i dostęp
-    entrance->current_direction = direction;
-    pthread_mutex_unlock(&entrance->lock);
-}
-
-void release_entrance(Entrance* entrance) {
-    pthread_mutex_lock(&entrance->lock);
-
-    // Sprawdzenie, czy zmiana kierunku jest konieczna
-    if (entrance->waiting_in > 0 && entrance->waiting_out == 0) {
-        entrance->current_direction = 1; //wchodzenie do ula
-	sem_post(&entrance->access);
-    } else if (entrance->waiting_out > 0 && entrance->waiting_in == 0) {
-        entrance->current_direction = 0; //wychodzenie z ula
-	sem_post(&entrance->access);
-    } else if (entrance->waiting_in == 0 && entrance->waiting_out == 0) {
-        entrance->current_direction = -1; //brak ruchu
-	sem_post(&entrance->access);
-    }
-
-    // Zwolnienie dostępu
-    pthread_mutex_unlock(&entrance->lock);
-
-}
-
+// Zwalnia zasoby związane z wejściem do ula
 void destroy_entrance(Entrance* entrance) {
-    if (sem_destroy(&entrance->access) != 0) {
-        perror("sem_destroy");
-    }
-    if (pthread_mutex_destroy(&entrance->lock) != 0) {
-        perror("pthread_mutex_destroy");
-    }
+    pthread_mutex_destroy(&entrance->lock);
+    pthread_cond_destroy(&entrance->cond);
 }
+
+// Pszczoła korzysta z wejścia do ula
+void use_entrance(Entrance* entrance, bool direction, int bee_id) {
+    pthread_mutex_lock(&entrance->lock);
+
+       if (direction == false) { // Jeśli chodzi o wyjście
+        // Pszczoła królowa nie może wyjść z ula
+		printf("Królowa nie opuszcza ula!\n");
+        	pthread_mutex_unlock(&entrance->lock);
+        	return;
+   	}
+// Jeśli kierunek jest różny od aktualnego, pszczoła czeka
+    while (entrance->bees_inside > 0 && entrance->entry_direction != direction) {        
+        pthread_cond_wait(&entrance->cond, &entrance->lock);
+    }
+    // Ustawia kierunek wejścia i zwiększa liczbę pszczół w wejściu
+    entrance->entry_direction = direction;
+    entrance->bees_inside++;
+    printf("Pszczoła %d %s przez wejście\n", bee_id, direction ? "wchodzi" : "wychodzi");
+
+    pthread_mutex_unlock(&entrance->lock);
+
+    // Symuluje czas przejścia przez wejście
+    usleep(500000);
+
+    pthread_mutex_lock(&entrance->lock);
+
+    // Zmniejsza liczbę pszczół w wejściu
+    entrance->bees_inside--;
+    if (entrance->bees_inside == 0) {
+        pthread_cond_broadcast(&entrance->cond); // Powiadamia inne pszczoły
+    }
+
+    pthread_mutex_unlock(&entrance->lock);
+}
+

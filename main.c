@@ -1,12 +1,15 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include"beehive.h"
-#include<semaphore.h>
 #include<pthread.h>
 #include<unistd.h>
 #include<signal.h>
 #include<errno.h>
 #include"entrances.h"
+#include<sys/ipc.h>
+#include<sys/sem.h>
+#include<sys/types.h>
+#include<semaphore.h>
 
 //zmienne globalne
 Beehive* hive;
@@ -63,18 +66,15 @@ void validate_input(int initial_bees, int max_population, int max_bees_in_hive) 
         }
 }
 
-void initialize_entrances() {
-    init_entrance(&entrance1);
-    init_entrance(&entrance2);
-}
+
 
 
 int main() {
-        int initial_bees = 100;
-        int max_population = 200;
-        int max_bees_in_hive = 49;
+        int initial_bees = 50;
+        int max_population = 100;
+        int max_bees_in_hive = 24;
         int queen_lifespan = 10;
-        int worker_lifespan = 8;
+        int worker_lifespan = 5;
 
         validate_input(initial_bees, max_population, max_bees_in_hive);
 
@@ -84,7 +84,7 @@ int main() {
         }
 
         hive->bees = malloc(max_population * sizeof(Bee));
-        if (!hive) {
+        if (!hive->bees) {
                 handle_error("malloc");
         }
 
@@ -93,18 +93,28 @@ int main() {
         hive->max_bees_in_hive = max_bees_in_hive;
         hive->queen_lifespan = queen_lifespan;
         hive->worker_lifespan = worker_lifespan;
-        hive->bees_in_hive = initial_bees;
+        hive->bees_in_hive = 15;
         hive->queen_alive = 1;
         hive->frame_signal = 0;
 
         srand(time(NULL));
         for (int i=0; i<initial_bees; i++) {
+		hive->bees[i].id = i;
                 hive->bees[i].type = 'W';
                 hive->bees[i].age =0;
                 hive->bees[i].visits = 0;
                 hive->bees[i].Ti = (rand() % 5 + 1)* 1000;
-        }
-        hive->bees[0].type = 'Q';
+		hive->bees[i].outside = false;
+
+    		if (i < max_bees_in_hive) {
+        		hive->bees[i].outside = false; // W ulu
+    		} else {
+        		hive->bees[i].outside = true;  // Poza ulem
+    			}
+	}
+
+        hive->bees[0].type = 'Q'; //pierwsza pszczola to krolowa
+	hive->bees[0].outside = false; //krolowa zawsze w ulu
 
         if (pthread_mutex_init(&hive->lock, NULL) != 0) {
                 handle_error("pthread_mutex_init");
@@ -112,10 +122,15 @@ int main() {
         if (sem_init(&hive->event_semaphore, 0, 0) != 0) {
                 handle_error("sem_init");
         }
+	sem_init(&hive->queen_semaphore, 0, 1);
+	sem_init(&hive->worker_semaphore, 0, 1);
 
-        setup_signal_handlers();
-	initialize_entrances();
-
+	init_entrance(&entrance1);
+    	init_entrance(&entrance2);
+        
+	setup_signal_handlers();
+	
+	
         pthread_t queen, workers, beekeeper, monitor;
 
         if (pthread_create(&queen, NULL, queen_thread, hive) != 0) {
@@ -158,14 +173,17 @@ int main() {
         if (pthread_mutex_destroy(&hive->lock) != 0) {
                 handle_error("pthread_mutex_destroy");
         }
-
-    	destroy_entrance(&entrance1);
-        destroy_entrance(&entrance2);
-
 	
 	if (sem_destroy(&hive->event_semaphore) != 0) {
                 handle_error("sem_destroy");
         }
+
+	
+	sem_destroy(&hive->queen_semaphore);
+	sem_destroy(&hive->worker_semaphore);
+	
+	destroy_entrance(&entrance1);
+	destroy_entrance(&entrance2);
 
         free(hive->bees);
         free(hive);
