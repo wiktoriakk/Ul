@@ -4,79 +4,45 @@
 #include"beehive.h"
 #include<errno.h>
 #include<stdbool.h>
-#include"entrances.h"
-#include<pthread.h>
-#include<sys/ipc.h>
 #include<sys/sem.h>
-#include<sys/types.h>
-#include<semaphore.h>
+#include"entrances.h"
 
 extern Entrance entrance1;
 extern Entrance entrance2;
 extern int running;
 
-void* worker_thread(void* arg) {
-	Beehive* hive = (Beehive*)arg;
-
+void worker_process() {
 	while(running) {
-		sem_wait(&hive->worker_semaphore);
+		struct sembuf sb = {0, -1, 0};
+		semop(sem_id, &sb, 1);
 
-		pthread_mutex_lock(&hive->lock);
-		//aktualizacja danych pszczol	
-		        	
-		int alive_bees = 0;
-
-		for (int i=0;i<hive->total_bees;i++) {
-			int idx = rand() % hive->total_bees;
-
-			hive->bees[idx].age++;
-			
-			//spr czy pszczola osiagnela swoj maksymalny wiek
-			if (hive->bees[idx].type == 'W') {
-				hive->bees[idx].visits++;
-				if(hive->bees[idx].visits > hive->worker_lifespan) {
-				printf("Pszczola %d umarla z powodu starosci.\n", hive->bees[idx].id);
-				continue;
-								
-			}		
-			if (hive->bees[idx].Ti == 0) {
-				hive->bees[idx].Ti = (rand() % 5 + 5) * 1000;
+		for (int i=1;i<hive->total_bees;i++) {
+			if (hive->bees[i].type == 'W' && hive->bees[i].age < 10) {
+				if (hive->bees[i].outside) {
+					use_entrance(&hive->entrance1, true, hive->bees[i].id);
+					hive->bees[i].outside = false;
+					hive->bees_in_hive++;
+				} else {
+				use_entrance(&hive->entrance2, false, hive->bees[i].id);
+				hive->bees[i].outside = true;
+				hive->bees_in_hive--;
 			}
-			//zmniejszenie czasu wewnatrz ila
-			if (hive->bees[idx].Ti>0) {
-				hive->bees[idx].Ti -= 500;
+
+			hive->bees[i].visits++;
+			hive->bees[i].age++;
+			if (hive->bees[i].visits > 5) {
+				printf("Pszczoła %d umiera z powodu starości.\n" , hive->bees[i].id);
+				hive->bees[i].Ti = 0;
 			}
-			
-			// wejscie lub wyjscie z ula
-			bool entering = hive->bees[idx].outside;
-            		if (entering) {
-                		if (hive->bees[idx].outside) {
-                    		use_entrance(&entrance1, true, hive->bees[idx].id);
-                    		hive->bees_in_hive++;
-                    		hive->bees[idx].outside = false;
-                		}
-            		} else {
-                		if (!hive->bees[idx].outside) {
-                    		use_entrance(&entrance2, false, hive->bees[idx].id);
-                    		//printf("Pszczoła %d opuszcza ul przez wejście %d.\n", bee_id, entrance_number);
-                    		hive->bees_in_hive--;
-                    		hive->bees[idx].outside = true;
-                		}
-            		}
 		}
 
-			hive->bees[alive_bees++] = hive->bees[idx];
-		}
-		 hive->total_bees=alive_bees;
-			
-		 pthread_mutex_unlock(&hive->lock);
-
-	
-	usleep(700000);
-
-	sem_post(&hive->queen_semaphore);
 	}
+	
+	sb.sem_op = 1;
+	semop(sem_id, &sb, 1);
 
-return NULL;
+	sleep(1);
+
+}
 
 }

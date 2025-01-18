@@ -20,16 +20,11 @@ void destroy_entrance(Entrance* entrance) {
 void use_entrance(Entrance* entrance, bool direction, int bee_id) {
     pthread_mutex_lock(&entrance->lock);
 
-       if (direction == false) { // Jeśli chodzi o wyjście
-        // Pszczoła królowa nie może wyjść z ula
-		printf("Królowa nie opuszcza ula!\n");
-        	pthread_mutex_unlock(&entrance->lock);
-        	return;
-   	}
-// Jeśli kierunek jest różny od aktualnego, pszczoła czeka
-    while (entrance->bees_inside > 0 && entrance->entry_direction != direction) {        
+    // Jeśli kierunek jest różny od aktualnego, pszczoła czeka
+    while (entrance->bees_inside > 0 && entrance->entry_direction != direction) {
         pthread_cond_wait(&entrance->cond, &entrance->lock);
     }
+
     // Ustawia kierunek wejścia i zwiększa liczbę pszczół w wejściu
     entrance->entry_direction = direction;
     entrance->bees_inside++;
@@ -50,4 +45,3 @@ void use_entrance(Entrance* entrance, bool direction, int bee_id) {
 
     pthread_mutex_unlock(&entrance->lock);
 }
-

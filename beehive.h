@@ -2,15 +2,17 @@
 #define BEEHIVE_H
 
 #include<stdbool.h>
-#include<pthread.h>
+#include<sys/types.h>
 #include<sys/ipc.h>
 #include<sys/sem.h>
-#include<semaphore.h>
-#include<sys/types.h>
-
-#define THREAD_RUNNING 1
-#define THREAD_SLEEPING 2
-#define THREAD_TERMINATED 3
+#include<sys/shm.h>
+#include<unistd.h>
+#include<stdio.h>
+#include<stdlib.h>
+#include<signal.h>
+#include<time.h>
+#include<pthread.h>
+#include"entrances.h"
 
 //struktura pszczoly
 typedef struct {
@@ -24,29 +26,28 @@ typedef struct {
 
 //struktura ula
 typedef struct {
-        Bee* bees; // wskaxnik na tablice pszczol
+        Bee bees[100]; // wskaznik na tablice pszczol
         int total_bees; //calkowita liczba pszczol
         int max_population; //maksymalna liczba pszczol
 	int max_bees_in_hive;  //maksymalna liczba pszczol w ulu
-	int queen_lifespan; //dlugosc zycia krolowej
-	int worker_lifespan; //dligosc zycia robotnicy
 	int bees_in_hive; //aktualna liczba pszczol w ulu
-	pthread_mutex_t lock; //mutex do synchronizacji
-	sem_t event_semaphore; //semafor do obslugi zdarzen
-	int queen_alive; //status zycia krolowej
-	int frame_signal; //sygnal zmiany ramek 0- bez zmiany, 1-dodanie ramek, 2-usuniecie ramek
-	int event_flag; //flaga zdarzen 0-brak zdarzenia, 1-zmiana populacji
-	sem_t worker_semaphore;
-	sem_t queen_semaphore;
+	int queen_alive; //czy krolowa zyje
+	int frame_signal; //sygnal zmiany ramek 0- bez zmiany, 1-dodanie ramek, 2-usuniecie rame
+	Entrance entrance1;
+	Entrance entrance2;
 } Beehive;
 
+//zmienne globalne
 extern int running;
+extern int shm_id;
+extern int sem_id;
+extern Beehive *hive;
 
 //deklaracja funkcji
-void validate_input(int initial_bees, int max_population, int max_bees_in_hive);
-void* queen_thread(void* arg);
-void* worker_thread(void* arg);
-void* beekeeper_thread(void* arg);
-void* monitor_thread(void* arg);
+//void validate_input(int initial_bees, int max_population, int max_bees_in_hive);
+void queen_process();
+void worker_process();
+void beekeeper_process();
+void monitor_process();
 
 #endif
