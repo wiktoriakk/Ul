@@ -8,6 +8,7 @@
 #include <signal.h>
 #include "beehive.h"
 #include"entrances.h"
+#include<errno.h>
 
 //zmienne globalne
 int running = 1;
@@ -29,13 +30,6 @@ void signal_handler(int signo) {
 }
 
 /*
-void setup_signal_handlers() {
-	signal(SIGUSR1, handle_signal);
-	signal(SIGUSR2, handle_signal);
-	signal(SIGINT, handle_signal);
-}
-
-
 void validate_input(int initial_bees, int max_population, int max_bees_in_hive) {
         if (initial_bees <= 0 || max_population <= 0 || max_bees_in_hive <= 0) {
                 fprintf(stderr, "Blad: Wszystkie wartosci musza byc dodatnie.\n");
@@ -58,7 +52,7 @@ void start_process(void (*process_func)()) {
 		process_func();	
 		exit(0);
 	} else if (pid<0) {
-		perror("fork");
+		perror("Błąd podczas fork");
 		exit(EXIT_FAILURE);
 	}
 }
@@ -66,12 +60,12 @@ void start_process(void (*process_func)()) {
 int main() {
 	shm_id = shmget(IPC_PRIVATE, sizeof(Beehive), IPC_CREAT | 0666);
 	if (shm_id < 0) {
-		perror("shmget");
+		perror("Błąd podczas tworzenia pamięci współdzielonej");
 		exit(EXIT_FAILURE);
 	}
 	hive=(Beehive *)shmat(shm_id, NULL, 0);
 	if (hive==(void *)-1) {
-		perror("shmat");
+		perror("Błąd podczas dołączania pamięci współdzielonej");
 		exit(EXIT_FAILURE);
 	}
 
@@ -96,14 +90,28 @@ int main() {
         
 	sem_id=semget(IPC_PRIVATE, 1, IPC_CREAT | 0666);
 	if (sem_id < 0) {
-		perror("semget");
+		perror("Błąd podczas tworzenia semafora");
 		exit(EXIT_FAILURE);
 	}
-	semctl(sem_id, 0, SETVAL, 1);
+	if (semctl(sem_id, 0, SETVAL, 1) == -1) {
+		perror("Błąd podczas ustawiania wartości semafora");
+		exit(EXIT_FAILURE);
+	}
 
-	signal(SIGUSR1, signal_handler);
-	signal(SIGUSR2, signal_handler);
-	signal(SIGINT, signal_handler);
+	if (signal(SIGUSR1, signal_handler) == SIG_ERR) {
+		perror("Błąd podczas ustawiania obsługi SIGUSR1");
+		exit(EXIT_FAILURE);
+	}
+
+	if (signal(SIGUSR2, signal_handler) == SIG_ERR) {
+		perror("Błąd podczas ustawiania obsługi SIGUSR2");
+		exit(EXIT_FAILURE);
+	}
+	
+	if (signal(SIGINT, signal_handler) == SIG_ERR) {
+		perror("Błąd podczas ustawiania obsługi SIGINT");
+		exit(EXIT_FAILURE);
+	}
 
 	start_process(queen_process);
 	start_process(worker_process);
@@ -114,12 +122,21 @@ int main() {
 		sleep(1);
 	}
 
-        kill(0, SIGKILL);
+        if (kill(0, SIGKILL) == -1) {
+		perror("Błąd podczas wysyłania sygnału SIGKILL do procesów potomnych");
+	}
 
-	shmdt(hive);
-	shmctl(shm_id, IPC_RMID, NULL);
+	if (shmdt(hive) == -1) {
+		perror("Błąd podczas odłączania pamięci współdzielonej");
+	}
 
-	semctl(sem_id, 0, IPC_RMID);
+	if (shmctl(shm_id, IPC_RMID, NULL) == -1) {
+		perror("Błąd podczas usuwania pamięci współdzielonej");
+	}
+	
+	if (semctl(sem_id, 0, IPC_RMID) == -1) {
+		perror("Błąd podczas usuwania semafora");
+	}
 
 	destroy_entrance(&hive->entrance1);
 	destroy_entrance(&hive->entrance2);

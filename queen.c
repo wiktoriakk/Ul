@@ -4,11 +4,15 @@
 #include"beehive.h"
 #include<sys/sem.h>
 #include<stdbool.h>
+#include<errno.h>
 
 void queen_process() {
 	while (running) {
 		struct sembuf sb = {0, -1, 0};
-		semop(sem_id, &sb, 1);
+		if (semop(sem_id, &sb, 1) == -1) {
+			perror("Błąd podczas pobierania semafora w queen_process");
+			exit(EXIT_FAILURE);
+		}
 		
 		//zmiana ramek
                 if (hive->frame_signal == 1) {
@@ -41,8 +45,11 @@ void queen_process() {
                 }
 
                 sb.sem_op = 1;
-		semop(sem_id, &sb, 1);
-	
+		if (semop(sem_id, &sb, 1) == -1) {
+			perror("Błąd podczas zwalniania semafora w queen_process");
+			exit(EXIT_FAILURE);
+		}
+		
 		sleep(1);
 	
 	}

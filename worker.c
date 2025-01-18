@@ -14,7 +14,10 @@ extern int running;
 void worker_process() {
 	while(running) {
 		struct sembuf sb = {0, -1, 0};
-		semop(sem_id, &sb, 1);
+		if (semop(sem_id, &sb, 1) == -1) {
+			perror("Błąd podczas pobierania semafora w worker_process");
+			exit(EXIT_FAILURE);
+		}
 
 		for (int i=1;i<hive->total_bees;i++) {
 			if (hive->bees[i].type == 'W' && hive->bees[i].age < 10) {
@@ -39,7 +42,10 @@ void worker_process() {
 	}
 	
 	sb.sem_op = 1;
-	semop(sem_id, &sb, 1);
+	if (semop(sem_id, &sb, 1) == -1) {
+		perror("Błąd podczas zwalniania semafora w worker_process");
+		exit(EXIT_FAILURE);
+	}
 
 	sleep(1);
 
