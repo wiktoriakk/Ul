@@ -29,22 +29,22 @@ void signal_handler(int signo) {
         }
 }
 
-/*
-void validate_input(int initial_bees, int max_population, int max_bees_in_hive) {
-        if (initial_bees <= 0 || max_population <= 0 || max_bees_in_hive <= 0) {
-                fprintf(stderr, "Blad: Wszystkie wartosci musza byc dodatnie.\n");
+
+void validate_hive(Beehive *hive) {
+        if (hive->total_bees <= 0 || hive->max_population <= 0 || hive->max_bees_in_hive <= 0) {
+                fprintf(stderr, "Błąd: Wszystkie wartości muszą być dodatnie.\n");
                 exit(EXIT_FAILURE);
         }
-        if (max_bees_in_hive>max_population) {
-                fprintf(stderr, "Blad: Maksymalna liczba pszczol w ulu nie moze przekraczac maksymalnej populacji.\n");
+        if (hive->max_bees_in_hive>hive->max_population) {
+                fprintf(stderr, "Błąd: Maksymalna liczba pszczół w ulu nie może przekraczać maksymalnej populacji.\n");
                 exit(EXIT_FAILURE);
         }
-        if (max_bees_in_hive >= (initial_bees / 2)) {
-                fprintf(stderr, "Blad: Maksymalna liczba pszczol w ulu musi byc mniejsza niz polowa poczatkowej liczby pszczol.\n");
+        if (hive->max_bees_in_hive >= (hive->total_bees / 2)) {
+                fprintf(stderr, "Błąd: Maksymalna liczba pszczół w ulu musi być mniejsza niż połowa początkowej liczby pszczół.\n");
                 exit(EXIT_FAILURE);
         }
 }
-*/
+
 
 void start_process(void (*process_func)()) {
 	pid_t pid = fork();
@@ -75,6 +75,8 @@ int main() {
         hive->bees_in_hive = 15;
         hive->queen_alive = 1;
         hive->frame_signal = 0;
+
+	validate_hive(hive);
 
         for (int i=0; i< hive->total_bees; i++) {
 		hive->bees[i].id = i;

@@ -15,9 +15,13 @@ void monitor_process() {
 	
 	while(running) {
         	struct sembuf sb = {0, -1, 0};
-		if (semop(sem_id, &sb, 1) == -1) {
-			perror("Błąd podczas pobierania semafora w monitor_process");
-			exit(EXIT_FAILURE);
+		while (semop(sem_id, &sb, 1) == -1) {
+			if (errno = EINTR) {
+				continue;
+			} else {
+				perror("Błąd podczas pobierania semafora w monitor_process");
+				exit(EXIT_FAILURE);
+			}
 		}
 
                 printf("\n--- Stan ula ---\n");
