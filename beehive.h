@@ -14,40 +14,42 @@
 #include<pthread.h>
 #include"entrances.h"
 
-//struktura pszczoly
+//struktura pszczoły
 typedef struct {
-	int id; //identyfikator pszczoly
-        char type; //rodzaj pszczoly: 'Q' krolowa, 'W' robotnica
-        int age; //wiek (zycie)
+	int id; //identyfikator pszczoły
+        char type; //rodzaj pszczoły: 'Q' krolowa, 'W' robotnica
+        int age; //wiek pszczoły
         int visits; //liczba wizyt w ulu
 	int Ti; //czas pobytu w ulu
-	bool outside; //czy pszczola jest poza ulem (true-tak, false-nie)
+	bool outside; //czy pszczoła jest poza ulem (true-tak, false-nie)
+	bool dead; //czy pszczoła jest martwa
 } Bee;
 
 //struktura ula
 typedef struct {
-        Bee bees[100]; // wskaznik na tablice pszczol
-        int total_bees; //calkowita liczba pszczol
-        int max_population; //maksymalna liczba pszczol
-	int max_bees_in_hive;  //maksymalna liczba pszczol w ulu
-	int bees_in_hive; //aktualna liczba pszczol w ulu
-	int queen_alive; //czy krolowa zyje
-	int frame_signal; //sygnal zmiany ramek 0- bez zmiany, 1-dodanie ramek, 2-usuniecie rame
-	Entrance entrance1;
-	Entrance entrance2;
+        Bee bees[100]; //tablica przechowująca informacje o pszczołach
+        int total_bees; //całkowita liczba pszczół
+        int max_population; //maksymalna liczba pszczół
+	int max_bees_in_hive;  //maksymalna liczba pszczół w ulu
+	int bees_in_hive; //aktualna liczba pszczół w ulu
+	int queen_alive; //czy królowa żyje (1-żyje, 0-umarła)
+	int frame_signal; //sygnał zmiany ramek (0-bez zmiany, 1-dodanie ramek, 2-usunięcie ramek)
+	Entrance entrance1; //pierwsze wejście do ula
+	Entrance entrance2; //drugie wejście do ula
+	pthread_mutex_t mutex; //mutex do synchronizacji stanu ula
 } Beehive;
 
 //zmienne globalne
-extern int running;
-extern int shm_id;
-extern int sem_id;
-extern Beehive *hive;
+extern int running; //status symulacji (1-działa, 0-zatrzymana)
+extern int shm_id; //identyfikator pamięci współdzielonej
+extern int sem_id; //identyfikator semafora
+extern Beehive *hive; //wskaźnik na strukturę ula w pamięci współdzielonej
 
-//deklaracja funkcji
-//void validate_input(int initial_bees, int max_population, int max_bees_in_hive);
-void queen_process();
-void worker_process();
-void beekeeper_process();
-void monitor_process();
+
+//deklaracje funkcji procesów
+void queen_process(); //proces królowej 
+void worker_process(); //proces robotnicy
+void beekeeper_process(); //proces pszczelarza
+void monitor_process(); //proces monitorowania stanu ula
 
 #endif

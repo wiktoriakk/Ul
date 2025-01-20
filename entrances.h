@@ -4,15 +4,15 @@
 #include <pthread.h>
 #include <stdbool.h>
 
-// Struktura wejścia do ula
+//struktura wejścia do ula
 typedef struct {
-    pthread_mutex_t lock;   // Mutex do synchronizacji wejścia
-    pthread_cond_t cond;    // Warunek na kierunek ruchu
-    bool entry_direction;   // True = wejście, False = wyjście
-    int bees_inside;        // Liczba pszczół korzystających z wejścia
+    pthread_mutex_t lock;   //mutex do synchronizacji wejścia
+    pthread_cond_t cond;    //warunek na kierunek ruchu
+    bool entry_direction;   //true-wejscie, false-wyjściee
+    int bees_inside;        //liczba pszczół korzystających z wejścia
 } Entrance;
 
-// Funkcje do zarządzania wejściami
+//funkcje zarządzające wyjsciami
 void init_entrance(Entrance* entrance);
 void destroy_entrance(Entrance* entrance);
 void use_entrance(Entrance* entrance, bool direction, int bee_id);
