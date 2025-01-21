@@ -27,7 +27,7 @@ typedef struct {
 
 //struktura ula
 typedef struct {
-        Bee bees[100]; //tablica przechowująca informacje o pszczołach
+        Bee bees[1000]; //tablica przechowująca informacje o pszczołach
         int total_bees; //całkowita liczba pszczół
         int max_population; //maksymalna liczba pszczół
 	int max_bees_in_hive;  //maksymalna liczba pszczół w ulu
@@ -37,6 +37,9 @@ typedef struct {
 	Entrance entrance1; //pierwsze wejście do ula
 	Entrance entrance2; //drugie wejście do ula
 	pthread_mutex_t mutex; //mutex do synchronizacji stanu ula
+	int bees_entered; //liczba pszczół, które weszły do ula
+	int bees_exited; //liczba psczół, które wyszły z ula
+	int eggs_laid; //liczba jaj złożonych przez królową
 } Beehive;
 
 //zmienne globalne
@@ -51,5 +54,6 @@ void queen_process(); //proces królowej
 void worker_process(); //proces robotnicy
 void beekeeper_process(); //proces pszczelarza
 void monitor_process(); //proces monitorowania stanu ula
+
 
 #endif

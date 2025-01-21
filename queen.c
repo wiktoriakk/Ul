@@ -20,7 +20,14 @@ void queen_process() {
 			}
 		}
 
-		pthread_mutex_lock(&hive->mutex);
+		if (pthread_mutex_lock(&hive->mutex) != 0) {
+			perror("Błąd podczas blokowania mutexu w queen_process");
+            		sb.sem_op = 1;
+            		if (semop(sem_id, &sb, 1) == -1) {
+                		perror("Błąd podczas zwalniania semafora w queen_process");
+            		}
+            		exit(EXIT_FAILURE);
+        	}
 
 		//zmiana ramek
                 if (hive->frame_signal == 1) {
@@ -42,7 +49,11 @@ void queen_process() {
 			printf("Brak robotnic. Ul umiera!\n");
 			hive->queen_alive=0;
 			running=0;
-			pthread_mutex_unlock(&hive->mutex);
+			
+			if (pthread_mutex_unlock(&hive->mutex) != 0) {
+				perror("Błąd podczas odblokowywania mutexu w queen_process");
+			}
+
 			sb.sem_op=1;
 			if (semop(sem_id, &sb, 1) == -1) {
 				perror("Błąd podczas zwalniania semafora w queen_process");
@@ -83,7 +94,7 @@ void queen_process() {
 				printf("Królowa nie może złożyć jaj: maksymalna populacja osiągnięta.\n");
 				//continue;
 			} else if (hive->bees_in_hive < hive->max_bees_in_hive) {
-                        		int eggs = rand() % 5 + 1;
+                        		int eggs = rand() % 10 + 1;
                         		int available_space = hive->max_bees_in_hive - hive->bees_in_hive;
 			
 					if (eggs > available_space) {
@@ -96,23 +107,34 @@ void queen_process() {
 						hive->bees[hive->total_bees].age=0;
 						hive->bees[hive->total_bees].visits=0;
 						hive->bees[hive->total_bees].Ti=(rand()%5+1)*1000;
-						hive->bees[hive->total_bees].outside=true;
+						hive->bees[hive->total_bees].outside=false;
 						hive->bees[hive->total_bees].dead=false;
 						hive->total_bees++;
+						hive->bees_in_hive++;
 					}
+					hive->eggs_laid += eggs;
+				
                         		printf("Królowa złożyła %d jaj. Aktualna liczba pszczół: %d\n", eggs, hive->total_bees);                		
 			}
                    
 		}
 
-		pthread_mutex_unlock(&hive->mutex);
-                sb.sem_op = 1;
+		if (pthread_mutex_unlock(&hive->mutex) != 0) {
+			perror("Błąd podczas odblokowywania mutexu w queen_process");\
+			sb.sem_op = 1;
+            		if (semop(sem_id, &sb, 1) == -1) {
+                		perror("Błąd podczas zwalniania semafora w queen_process");
+            		}
+            		exit(EXIT_FAILURE);
+        	}
+
+		sb.sem_op = 1;
 		if (semop(sem_id, &sb, 1) == -1) {
 			perror("Błąd podczas zwalniania semafora w queen_process");
 			exit(EXIT_FAILURE);
 		}
 		
-		sleep(1);
+		usleep(250000);
 	
 	}
 

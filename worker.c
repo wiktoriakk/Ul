@@ -23,7 +23,14 @@ void worker_process() {
 			}
 		}
 		
-		pthread_mutex_lock(&hive->mutex);
+		if (pthread_mutex_lock(&hive->mutex) != 0) {
+			perror("Błąd podczas blokowania mutexu w worker_process");
+            		sb.sem_op = 1;
+            		if (semop(sem_id, &sb, 1) == -1) {
+                		perror("Błąd podczas zwalniania semafora w worker_process");
+            		}
+            	exit(EXIT_FAILURE);
+        	}
 		
 		//sprawdzenie liczby żywych pszczół
 		int alive_workers=0;
@@ -36,7 +43,11 @@ void worker_process() {
 		if (alive_workers == 0) {
 			printf("Brak żywych pszczół. Robotnice kończą pracę.\n");
 			running=0;
-			pthread_mutex_unlock(&hive->mutex);
+			
+			if (pthread_mutex_unlock(&hive->mutex) != 0) {
+				perror("Błąd podczas odblokowywania mutexu w worker_process");
+			}
+
 			sb.sem_op=1;
 			if (semop(sem_id, &sb, 1) == -1) {
 				perror("Błąd podczas zwalniania semafora w worker_process");
@@ -60,11 +71,13 @@ void worker_process() {
 					if (hive->bees_in_hive < hive->max_bees_in_hive) {
 						//wejście pszczoły do ula
 						use_entrance(&hive->entrance1, true, current_bee->id);
-						hive->bees_in_hive++;
+						hive->bees_entered++;
 						current_bee->outside=false;
 						current_bee->Ti = (rand() % 5 + 5)*1000;
+						hive->bees_in_hive++;
 					} else {
 						printf("Pszczoła %d nie może wejść: maksymalna liczba pszczół w ulu osiągnięta.\n", current_bee->id);
+						sleep(1);
 					}
 				} else {
 					//czas pobytu pszczoły w ulu
@@ -73,8 +86,9 @@ void worker_process() {
 					if (current_bee->Ti <= 0) {
 						//wyjście pszczoły z ula
 						use_entrance(&hive->entrance2, false, current_bee->id);
-						hive->bees_in_hive--;
+						hive->bees_exited++;
 						current_bee->outside = true;
+						hive->bees_in_hive--;
 					}	
 				}
 
@@ -92,7 +106,15 @@ void worker_process() {
 
 	}
 
-	pthread_mutex_unlock(&hive->mutex);
+	if (pthread_mutex_unlock(&hive->mutex) != 0) {
+	 	perror("Błąd podczas odblokowywania mutexu w worker_process");
+            	sb.sem_op = 1;
+            	if (semop(sem_id, &sb, 1) == -1) {
+                	perror("Błąd podczas zwalniania semafora w worker_process");
+            	}
+            	exit(EXIT_FAILURE);
+        }
+
 	
 	sb.sem_op = 1;
 	if (semop(sem_id, &sb, 1) == -1) {

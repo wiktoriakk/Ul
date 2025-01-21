@@ -8,90 +8,102 @@
 extern int running;
 
 void monitor_process() {
-	//otwoeranie pliku do logów
-	FILE *log_file = fopen("hive_status.log", "w");
-	if (log_file == NULL) {
-		perror("Nie można otworzyć pliku do zapisu");
-		exit(EXIT_FAILURE);
-	}
-	
-	while(running) {
-        	struct sembuf sb = {0, -1, 0};
-		while (semop(sem_id, &sb, 1) == -1) {
-			if (errno == EINTR) {
-				continue;
-			} else {
-				perror("Błąd podczas pobierania semafora w monitor_process");
-				fclose(log_file);
-				exit(EXIT_FAILURE);
-			}
-		}
-		
-		pthread_mutex_lock(&hive->mutex);
+    printf("Rozpoczęcie monitorowania ula...\n");
+    FILE *summary_file = NULL;
 
-		if (hive->bees_in_hive == 0 && hive->queen_alive == 0) {
-            		printf("Monitor: Ul zakończył pracę. Zatrzymanie procesu monitorowania.\n");
-            		running = 0;
-            		pthread_mutex_unlock(&hive->mutex);
-			sb.sem_op=1;
-			semop(sem_id, &sb, 1);
-        	    break;
-	        }
+    while (running) {
+	printf("Monitor: Pętla monitorowania trwa...\n");
 
-		/*if (!running) {
-			printf("Symulacja zakończona. Proces monitorowania kończy pracę.\n");
-			sb.sem_op=1;
-			if (semop(sem_id, &sb, 1) == -1) {
-				perror("Błąd podczas zwalniania semafora w monitor_process");
-				//fclose(log_file);
-				//exit(EXIT_FAILURE);
-			}
-			break;
-		}*/
+        struct sembuf sb = {0, -1, 0};
+        while (semop(sem_id, &sb, 1) == -1) {
+            if (errno == EINTR) {
+                continue;
+            } else {
+                perror("Błąd podczas pobierania semafora w monitor_process");
+                exit(EXIT_FAILURE);
+            }
+        }
 
-                printf("\n--- Stan ula ---\n");
-                fprintf(log_file, "\n--- Stan ula ---\n");
+        if (pthread_mutex_lock(&hive->mutex) != 0) {
+            perror("Błąd podczas blokowania mutexu w monitor_process");
+            sb.sem_op = 1;
+            if (semop(sem_id, &sb, 1) == -1) {
+                perror("Błąd podczas zwalniania semafora w monitor_process");
+            }
+            exit(EXIT_FAILURE);
+        }
 
-		printf("Królowa: %s\n", hive->queen_alive ? "żyje" : "umarła");
-		fprintf(log_file, "Królowa: %s\n", hive->queen_alive ? "żyje" : "umarła");
-                
-		printf("Całkowita liczba pszczół: %d\n", hive->total_bees);
-		fprintf(log_file, "Całkowita liczba pszczół: %d\n", hive->total_bees);                
 
-		printf("Pszczoły w ulu: %d\n", hive->bees_in_hive);
-		fprintf(log_file, "Pszczoły w ulu: %d\n", hive->bees_in_hive);
+        //sprawdzenie czy ul zakoćzył pracę
+        if (hive->bees_in_hive == 0 || hive->queen_alive == 0) {
+            printf("Monitor: Ul zakończył pracę. Tworzenie podsumowania...\n");
+            running = 0;
 
-		printf("Wejście 1: %d pszczół (kierunek: %s)\n",
-			hive->entrance1.bees_inside,
-			hive->entrance1.entry_direction ? "wejście" : "wyjście");
-		fprintf(log_file, "Wejście 1: %d pszczół (kierunek: %s)\n",
-                	hive->entrance1.bees_inside,
-                	hive->entrance1.entry_direction ? "wejście" : "wyjście");
+            //zapis podsumowania do pliku
+	    summary_file = fopen("hive_summary.log", "w");
+            if (summary_file == NULL) {
+                perror("Nie można otworzyć pliku do zapisu podsumowania");
+            } else {
+                fprintf(summary_file, "--- Podsumowanie symulacji ---\n");
+                fprintf(summary_file, "Królowa: %s\n", hive->queen_alive ? "żyje" : "umarła");
+                fprintf(summary_file, "Całkowita liczba pszczół: %d\n", hive->total_bees);
+                fprintf(summary_file, "Pszczoły w ulu na końcu symulacji: %d\n", hive->bees_in_hive);
+                fprintf(summary_file, "Wejście 1: %d pszczół (ostatni kierunek: %s)\n",
+                        hive->entrance1.bees_inside,
+                        hive->entrance1.entry_direction ? "wejście" : "wyjście");
+                fprintf(summary_file, "Wejście 2: %d pszczół (ostatni kierunek: %s)\n",
+                        hive->entrance2.bees_inside,
+                        hive->entrance2.entry_direction ? "wejście" : "wyjście");
+                fprintf(summary_file, "Liczba złożonych jaj: %d\n", hive->eggs_laid);
+                fprintf(summary_file, "Liczba pszczół, które weszły do ula: %d\n", hive->bees_entered);
+                fprintf(summary_file, "Liczba pszczół, które wyszły z ula: %d\n", hive->bees_exited);
 
-        	printf("Wejście 2: %d pszczół (kierunek: %s)\n",
-               		hive->entrance2.bees_inside,
-               		hive->entrance2.entry_direction ? "wejście" : "wyjście");
-        	fprintf(log_file, "Wejście 2: %d pszczół (kierunek: %s)\n",
-                	hive->entrance2.bees_inside,
-                	hive->entrance2.entry_direction ? "wejście" : "wyjście");
-		
-		fflush(log_file);
+		printf("Zapis podsumowania zakończony.");
 
-		pthread_mutex_unlock(&hive->mutex);
+                if (fclose(summary_file) != 0) {
+                    perror("Nie można zamknąć pliku z podsumowaniem");
+                }
+            }
 
-		sb.sem_op = 1;
-		if (semop(sem_id, &sb, 1) == -1) {
-			perror("Błąd podczas zwalniania semafora w monitor_process");
-			fclose(log_file);
-			exit(EXIT_FAILURE);
-		}
-	
-		sleep(5);
-	}
+            if (pthread_mutex_unlock(&hive->mutex) != 0) {
+                perror("Błąd podczas odblokowywania mutexu w monitor_process");
+            }
+            sb.sem_op = 1;
+            if (semop(sem_id, &sb, 1) == -1) {
+                perror("Błąd podczas zwalniania semafora w monitor_process");
+            }
+            break;
+        }
 
-	if (fclose(log_file) != 0) {
-		perror("Nie można zamknąć pliku do zapisu");
-	}
+        //wyświetlenie aktualnego stanu ula
+        printf("\n--- Stan ula ---\n");
+        printf("Królowa: %s\n", hive->queen_alive ? "żyje" : "umarła");
+        printf("Całkowita liczba pszczół: %d\n", hive->total_bees);
+        printf("Pszczoły w ulu: %d\n", hive->bees_in_hive);
+        printf("Wejście 1: %d pszczół (kierunek: %s)\n",
+               hive->entrance1.bees_inside,
+               hive->entrance1.entry_direction ? "wejście" : "wyjście");
+        printf("Wejście 2: %d pszczół (kierunek: %s)\n",
+               hive->entrance2.bees_inside,
+               hive->entrance2.entry_direction ? "wejście" : "wyjście");
 
-	printf("Proces monitorowania zakończył działanie.\n");
+        if (pthread_mutex_unlock(&hive->mutex) != 0) {
+            perror("Błąd podczas odblokowywania mutexu w monitor_process");
+            sb.sem_op = 1;
+            if (semop(sem_id, &sb, 1) == -1) {
+                perror("Błąd podczas zwalniania semafora w monitor_process");
+            }
+            exit(EXIT_FAILURE);
+        }
+
+        sb.sem_op = 1;
+        if (semop(sem_id, &sb, 1) == -1) {
+            perror("Błąd podczas zwalniania semafora w monitor_process");
+            exit(EXIT_FAILURE);
+        }
+
+        sleep(5);
+    }
+
+    printf("Proces monitorowania zakończył działanie.\n");
 }
