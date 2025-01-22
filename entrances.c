@@ -46,7 +46,7 @@ void use_entrance(Entrance* entrance, bool direction, int bee_id) {
     	}
 
 	if (direction && hive->bees_in_hive >= hive->max_bees_in_hive) {
-		printf("Pszczoła %d nie może wejść:maksymalna liczba pszczół w ulu osiągnięta.\n", bee_id);
+		printf("\033[33mPszczoła %d nie może wejść:maksymalna liczba pszczół w ulu osiągnięta.\033[0m\n", bee_id);
 		if (pthread_mutex_unlock(&entrance->lock) != 0) {
 			perror("Błąd podczas odblokowywania mutexa w use_entrance");
 			exit(EXIT_FAILURE);

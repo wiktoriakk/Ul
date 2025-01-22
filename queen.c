@@ -91,7 +91,7 @@ void queen_process() {
 		//składanie jaj
 		} else {
 			if (hive->total_bees >= hive->max_population) {
-				printf("Królowa nie może złożyć jaj: maksymalna populacja osiągnięta.\n");
+				printf("\033[33mKrólowa nie może złożyć jaj: maksymalna populacja osiągnięta.\033[0m\n");
 				//continue;
 			} else if (hive->bees_in_hive < hive->max_bees_in_hive) {
                         		int eggs = rand() % 10 + 1;
@@ -114,7 +114,7 @@ void queen_process() {
 					}
 					hive->eggs_laid += eggs;
 				
-                        		printf("Królowa złożyła %d jaj. Aktualna liczba pszczół: %d\n", eggs, hive->total_bees);                		
+                        		printf("\033[34mKrólowa złożyła %d jaj. Aktualna liczba pszczół: %d\033[0m\n", eggs, hive->total_bees);                		
 			}
                    
 		}

@@ -26,6 +26,11 @@ void cleanup() {
  	destroy_entrance(&hive->entrance1);
         destroy_entrance(&hive->entrance2);
 
+	printf("Odblokowywanie mutexa...\n");
+	if (pthread_mutex_trylock(&hive->mutex) == 0) {
+		pthread_mutex_unlock(&hive->mutex);
+	}
+
 	printf("Niszczenie mutexa..\n");
 	if (pthread_mutex_destroy(&hive->mutex) != 0) {
                 perror("Błąd niszczenia mutexa");
@@ -52,10 +57,10 @@ void cleanup() {
 //obsługa sygnałów
 void signal_handler(int signo) {
         if (signo == SIGUSR1) {
-                printf("Otrzymano sygnał SIGUSR1: Dodanie ramek.\n");
+                printf("\033[32mOtrzymano sygnał SIGUSR1: Dodanie ramek.\033[0m\n");
                 hive->frame_signal = 1;
         } else if (signo == SIGUSR2) {
-                printf("Otrzymano sygnał SIGUSR2: Usunięcie ramek.\n");
+                printf("\033[31mOtrzymano sygnał SIGUSR2: Usunięcie ramek.\033[0m\n");
                 hive->frame_signal = 2;
         } else if (signo == SIGINT) {
 		printf("Otrzymano sygnał SIGINT: Zatrzymanie symulacji.\n");
