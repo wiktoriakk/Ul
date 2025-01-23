@@ -4,7 +4,7 @@
 #include <sys/types.h>
 #include "beehive.h"
 
-// Deklaracje funkcji
+//deklaracje funkcji pszczoły
 void bee_process(Bee *bee);
 pid_t start_bee_process(Bee *bee);
 

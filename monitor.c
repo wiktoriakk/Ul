@@ -39,7 +39,7 @@ void monitor_process() {
             running = 0;
         }
 
-        // Wyświetlanie stanu ula
+        //wyświetlanie stanu ula
         if (running) {
 	printf("\033[35m\n--- Stan ula ---\033[0m\n");
         printf("Królowa: %s\n", hive->queen_alive ? "żyje" : "umarła");

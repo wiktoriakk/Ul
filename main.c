@@ -207,7 +207,7 @@ int main() {
 		sleep(1);
 	}
 
-	// Zatrzymywanie procesów pszczół
+	//zatrzymywanie procesów pszczół
         for (int i = 0; i < hive->total_bees; i++) {
                 if (kill(hive->bees[i].process_id, SIGTERM) == -1) {
                 perror("Błąd podczas wysyłania SIGTERM procesu pszczoły");
@@ -220,7 +220,7 @@ int main() {
                 }
        
         }	
-
+	//zatrzymywanie procesów królowe, pszczelarza i monitora
 	printf("Zatrzymywanie procesów królowej, pszczelarza i monitora...\n");
 	for (int i = 0; i < 3; i++) {
     		if (kill(pids[i], SIGTERM) == -1) {
