@@ -4,8 +4,8 @@
 #include <sys/types.h>
 #include "beehive.h"
 
-//deklaracje funkcji pszczoły
-void bee_process(Bee *bee);
-pid_t start_bee_process(Bee *bee);
+//deklaracje funkcji pszczoły robotnicy
+void bee_process(Bee *bee); //proces pszczoły robotnicy
+pid_t start_bee_process(Bee *bee); //uruchomienie procesu pszczoły robotnicy
 
 #endif

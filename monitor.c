@@ -10,7 +10,7 @@ extern int running;
 void monitor_process() {
     printf("Rozpoczęcie monitorowania ula...\n");
 
-    while (running) {
+    while (running) { //główna pętla monitorowania
         struct sembuf sb = {0, -1, 0};
         if (semop(sem_id, &sb, 1) == -1) {
             perror("Błąd podczas pobierania semafora w monitor_process");
@@ -26,20 +26,20 @@ void monitor_process() {
             exit(EXIT_FAILURE);
         }
 
-        int alive_bees = 0;
+        int alive_bees = 0; //zliczanie aktywnych pszczół w roju
         for (int i = 0; i < hive->total_bees; i++) {
             if (!hive->bees[i].dead) {
                 alive_bees++;
             }
         }
         printf("Monitor: Liczba aktywnych pszczół: %d\n", alive_bees);
-
+//sprawdzenie warunków zakończenia symulacji
         if (hive->total_bees >= hive->max_population || (hive->bees_in_hive == 0 && alive_bees == 0)) {
             printf("Monitor: Zmieniam running na 0. Zatrzymywanie symulacji.\n");
             running = 0;
         }
 
-        //wyświetlanie stanu ula
+        //wyświetlanie stanu ula, jeśli symulacja wciąż trwa
         if (running) {
 	printf(CYAN "\n--- Stan ula ---" RESET "\n");
         printf("Królowa: %s\n", hive->queen_alive ? "żyje" : "umarła");

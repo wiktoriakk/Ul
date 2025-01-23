@@ -16,14 +16,14 @@
 #include <sys/stat.h>
 
 //zmienne globalne
-int running = 1;
-int shm_id;
-int sem_id;
-Beehive *hive;
-pid_t pids[3];
-int log_fd;
+int running = 1; //flaga kontrolująca działanie symulacji
+int shm_id; //identyfikator pamięci współdzielonej
+int sem_id; //identyfikator semafora globalnego
+Beehive *hive; //wskaźnik na strukturę ula w pamięci współdzielonej
+pid_t pids[3]; //tablica PID-ów procesów królowej, pszczelarza i monitora
+int log_fd; //deskryptor pliku do log
 
-void handle_signal(int signo) {
+void handle_signal(int signo) {//funkcja obsługująca sygnał sigterm
     if (signo == SIGTERM) {
         printf("Proces (PID: %d) otrzymał sygnał zakończenia.\n", getpid());
         fflush(stdout);
@@ -161,15 +161,15 @@ pid_t start_process(void (*process_func)(), const char *process_name) {
 
 
 int main() {
-	initialize_log();
+	initialize_log(); //inicjalizacja pliku log
 
-	shm_id = shmget(IPC_PRIVATE, sizeof(Beehive), IPC_CREAT | 0666);
+	shm_id = shmget(IPC_PRIVATE, sizeof(Beehive), IPC_CREAT | 0666); //tworzenie pamięci współdzielonej
 	if (shm_id < 0) {
 		perror("Błąd podczas tworzenia pamięci współdzielonej");
 		exit(EXIT_FAILURE);
 	}
 
-	hive=(Beehive *)shmat(shm_id, NULL, 0);
+	hive=(Beehive *)shmat(shm_id, NULL, 0); //dołączanie pamięci współdzielonej
 	if (hive==(void *)-1) {
 		perror("Błąd podczas dołączania pamięci współdzielonej");
 		cleanup();
@@ -187,7 +187,7 @@ int main() {
 	hive->bees_exited=0;
 	hive->eggs_laid=0;
 
-	validate_hive(hive);
+	validate_hive(hive); //walidacja wartości ula
        
 	//inicjalizacja wejść
 	init_entrance(&hive->entrance1);
@@ -216,7 +216,7 @@ int main() {
 		cleanup();
 		exit(EXIT_FAILURE);
 	}
-
+	//uruchamianie procesów
 	pids[0]=start_process(queen_process, "królowa");
 	pids[1]=start_process(beekeeper_process, "pszczelarz");
 	pids[2]=start_process(monitor_process, "monitor");
@@ -240,15 +240,15 @@ int main() {
 	usleep(5000000);
         }
 
-	while(running) {
+	while(running) { //pętla główna 
 
-		int alive_bees=0;
+		int alive_bees=0; //licznik żywych pszczół
 		for (int i=0; i<hive->total_bees;i++) {
 			if(!hive->bees[i].dead) {
 				alive_bees++;
 			}
 		}
-
+		//sprawdzenie warunku na żywotność ula
 		if (alive_bees == 0 || hive->queen_alive == 0 || hive->bees_in_hive == 0) {
 			printf("Ul umiera!\n");
 			running=0;
