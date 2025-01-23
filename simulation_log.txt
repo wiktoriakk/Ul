@@ -1,0 +1,5 @@
+
+--- Podsumowanie symulacji ---
+Pszczoły, które weszły do ula: 45
+Pszczoły, które wyszły z ula: 8
+Jaja złożone przez królową: 4

@@ -22,6 +22,8 @@
 #define BLUE "\033[34m"
 #define CYAN "\033[36m"
 
+#define LOG_FILE "simulation_log.txt"
+
 //struktura pszczoły
 typedef struct {
 	int id; //identyfikator pszczoły
@@ -63,5 +65,8 @@ void queen_process(); //proces królowej
 void beekeeper_process(); //proces pszczelarza
 void monitor_process(); //proces monitorowania stanu ula
 
+//funkcje do obsługi logu
+void initialize_log();
+void finalize_log();
 
-#endif
+#endif //BEEHIVE_H 

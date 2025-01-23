@@ -11,6 +11,9 @@
 #include <errno.h>
 #include <pthread.h>
 #include "bee.h"
+#include <string.h>
+#include <fcntl.h>
+#include <sys/stat.h>
 
 //zmienne globalne
 int running = 1;
@@ -18,6 +21,7 @@ int shm_id;
 int sem_id;
 Beehive *hive;
 pid_t pids[3];
+int log_fd;
 
 void handle_signal(int signo) {
     if (signo == SIGTERM) {
@@ -27,9 +31,50 @@ void handle_signal(int signo) {
     }
 }
 
+//funkcja inicjalizujaca plik logu
+void initialize_log() {
+    log_fd = open(LOG_FILE, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+    if (log_fd == -1) {
+        perror("Błąd podczas tworzenia pliku logu");
+        exit(EXIT_FAILURE);
+    }
+    printf("Plik logu został utworzony: %s\n", LOG_FILE);
+}
+
+//funkcja finalizujac plik logu
+void finalize_log() {
+	if (log_fd == -1) {
+        	fprintf(stderr, RED "Błąd: Plik logu nie został otwarty.\n" RESET);
+        	return;
+    }
+	if (hive != NULL) {
+    		char summary[256];
+    		snprintf(summary, sizeof(summary),
+             		"\n--- Podsumowanie symulacji ---\n"
+             		"Pszczoły, które weszły do ula: %d\n"
+             		"Pszczoły, które wyszły z ula: %d\n"
+             		"Jaja złożone przez królową: %d\n",
+             		hive->bees_entered, hive->bees_exited, hive->eggs_laid);
+
+    		if (write(log_fd, summary, strlen(summary)) == -1) {
+        		perror("Błąd podczas zapisywania podsumowania do pliku logu");
+    		}
+	} else {
+		fprintf(stderr, RED "Błąd: Brak dostępu do danych ula (hive jest NULL).\n" RESET);
+	}
+    if (close(log_fd) == -1) {
+        perror("Błąd podczas zamykania pliku logu");
+    } else {
+        printf("Plik logu został zamknięty.\n");
+    }
+	log_fd=-1;
+}
+
 //funkcja czyszcząca - zwalniająca zasoby
 void cleanup() {
 	printf(RED "Rozpoczęcie czyszczenia zasobów..." RESET "\n");
+
+	finalize_log();	
 
 	printf("Niszczenie wejść..\n");
  	destroy_entrance(&hive->entrance1);
@@ -38,7 +83,7 @@ void cleanup() {
    	printf("Usuwanie globalnego semafora...\n");
     	destroy_global_semaphore();	
 	
-	        printf("Odblokowywanie mutexa...\n");
+	printf("Odblokowywanie mutexa...\n");
         if (pthread_mutex_trylock(&hive->mutex) == 0) {
                 pthread_mutex_unlock(&hive->mutex);
         }
@@ -51,6 +96,8 @@ void cleanup() {
   	printf("Odłączanie pamięci współdzielonej...\n");
 	if (shmdt(hive) == -1) {
 		perror("Błąd podczas odłączania pamięci współdzielonej");
+	} else {
+		hive=NULL;
 	}
 	
 	printf("Usuwanie pamięci współdzielonej...\n");
@@ -114,6 +161,8 @@ pid_t start_process(void (*process_func)(), const char *process_name) {
 
 
 int main() {
+	initialize_log();
+
 	shm_id = shmget(IPC_PRIVATE, sizeof(Beehive), IPC_CREAT | 0666);
 	if (shm_id < 0) {
 		perror("Błąd podczas tworzenia pamięci współdzielonej");
@@ -235,6 +284,7 @@ int main() {
 	}
 
 	cleanup();
+	//finalize_log();
 	printf("Symulacja została zakończona.\n");
 	
 	return 0;

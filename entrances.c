@@ -96,6 +96,7 @@ void use_entrance(Entrance* entrance, bool direction, int bee_id) {
                    bee_id, hive->bees_in_hive, hive->max_bees_in_hive);
         } else {
             hive->bees_in_hive++;
+	    hive->bees_entered++;
             printf("Pszczoła %d wchodzi do ula. Liczba pszczół w ulu: %d/%d.\n", 
                    bee_id, hive->bees_in_hive, hive->max_bees_in_hive);
         }
@@ -103,6 +104,7 @@ void use_entrance(Entrance* entrance, bool direction, int bee_id) {
     //jeśli kierunek to wyjście
     else {
         hive->bees_in_hive--;
+	hive->bees_exited++;
         printf("Pszczoła %d wychodzi z ula. Liczba pszczół w ulu: %d/%d.\n", 
                bee_id, hive->bees_in_hive, hive->max_bees_in_hive);
     }
