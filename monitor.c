@@ -41,7 +41,7 @@ void monitor_process() {
 
         //wyświetlanie stanu ula
         if (running) {
-	printf("\033[35m\n--- Stan ula ---\033[0m\n");
+	printf(CYAN "\n--- Stan ula ---" RESET "\n");
         printf("Królowa: %s\n", hive->queen_alive ? "żyje" : "umarła");
         printf("Całkowita liczba pszczół: %d\n", hive->total_bees);
         printf("Pszczoły w ulu: %d\n", hive->bees_in_hive);

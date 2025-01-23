@@ -83,9 +83,9 @@ void queen_process() {
     					}
 
 					    hive->eggs_laid += eggs;
-    						printf("Królowa złożyła %d jaj. Aktualna liczba pszczół: %d\n", eggs, hive->total_bees);
+    						printf(YELLOW "Królowa złożyła %d jaj. Aktualna liczba pszczół: %d" RESET "\n", eggs, hive->total_bees);
 					}	 else {
-    						printf("Królowa nie może złożyć jaj: brak miejsca lub osiągnięto maksymalną populację.\n");
+    						printf(RED "Królowa nie może złożyć jaj: brak miejsca lub osiągnięto maksymalną populację." RESET "\n");
 					}
                    
 		

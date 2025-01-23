@@ -29,7 +29,7 @@ void handle_signal(int signo) {
 
 //funkcja czyszcząca - zwalniająca zasoby
 void cleanup() {
-	printf("Rozpoczęcie czyszczenia zasobów...\n");
+	printf(RED "Rozpoczęcie czyszczenia zasobów..." RESET "\n");
 
 	printf("Niszczenie wejść..\n");
  	destroy_entrance(&hive->entrance1);
@@ -58,16 +58,16 @@ void cleanup() {
 		perror("Błąd podczas usuwania pamieci współdzielonej");
 	}
 	        
-	printf("Zasoby zostały zwolnione.\n");
+	printf(RED "Zasoby zostały zwolnione." RESET "\n");
 }
 
 //obsługa sygnałów
 void signal_handler(int signo) {
         if (signo == SIGUSR1) {
-                printf("\033[32mOtrzymano sygnał SIGUSR1: Dodanie ramek.\033[0m\n");
+                printf(GREEN "Otrzymano sygnał SIGUSR1: Dodanie ramek." RESET "\n");
                 hive->frame_signal = 1;
         } else if (signo == SIGUSR2) {
-                printf("\033[31mOtrzymano sygnał SIGUSR2: Usunięcie ramek.\033[0m\n");
+                printf(RED "Otrzymano sygnał SIGUSR2: Usunięcie ramek." RED "\n");
                 hive->frame_signal = 2;
         } else if (signo == SIGINT) {
 		printf("Otrzymano sygnał SIGINT: Zatrzymanie symulacji.\n");
@@ -100,7 +100,7 @@ pid_t start_process(void (*process_func)(), const char *process_name) {
 	pid_t pid = fork();
 	if (pid == 0) {
 		signal(SIGINT, SIG_IGN);
-		printf("Proces %s rozpoczął działanie (PID: %d).\n", process_name, getpid());
+		printf(GREEN "Proces %s rozpoczął działanie" RESET "(PID: %d).\n", process_name, getpid());
 		process_func();	
 		exit(0);
 	} else if (pid<0) {
@@ -108,7 +108,7 @@ pid_t start_process(void (*process_func)(), const char *process_name) {
 		cleanup();
 		exit(EXIT_FAILURE);
 	}
-	printf("Proces %s uruchomiony (PID: %d).\n", process_name, pid);
+	printf(GREEN "Proces %s uruchomiony" RESET " (PID: %d).\n", process_name, pid);
 	return pid;
 }
 

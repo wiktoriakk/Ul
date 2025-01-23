@@ -75,7 +75,7 @@ void bee_process(void *arg) {
 
         //sprawdzenie czy pszczoła umiera po określonej liczbie wizyt
         if (bee->visits > 3) {
-            printf("Pszczoła %d umiera ze starości.\n", bee->id);
+            printf(BLUE "Pszczoła %d umiera ze starości." RESET "\n", bee->id);
             bee->dead = true;
             hive->bees_in_hive--;
         }
