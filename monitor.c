@@ -46,6 +46,8 @@ void monitor_process() {
         printf("Całkowita liczba pszczół: %d\n", hive->total_bees);
         printf("Pszczoły w ulu: %d\n", hive->bees_in_hive);
         printf("Aktywne pszczóły: %d\n", alive_bees);
+	
+	sleep(1);
 	}
 	
         if (pthread_mutex_unlock(&hive->mutex) != 0) {

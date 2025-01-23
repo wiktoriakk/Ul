@@ -44,6 +44,7 @@ void bee_process(void *arg) {
         printf("Pszczoła %d: outside=%d, Ti=%d, visits=%d, age=%d, bees_in_hive=%d/%d\n",
                bee->id, bee->outside, bee->Ti, bee->visits, bee->age, hive->bees_in_hive, hive->max_bees_in_hive);
         fflush(stdout);
+	printf("\n");
 	
         if (bee->outside) {
             //jeśli pszczoła próbuje wejść do ula
@@ -90,7 +91,7 @@ void bee_process(void *arg) {
             exit(EXIT_FAILURE);
         }
 
-        usleep(500000); 
+        usleep(800000); 
     }
 
     printf("Proces pszczoły %d zakończył działanie (PID: %d).\n", bee->id, getpid());

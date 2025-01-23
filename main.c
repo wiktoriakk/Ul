@@ -177,10 +177,10 @@ int main() {
 	}
 
 	//inicjalizacja ula
-        hive->total_bees = 50;
-       	hive->max_population = 100;
-        hive->max_bees_in_hive = 24;
-        hive->bees_in_hive = 1;
+        hive->total_bees = 10;
+       	hive->max_population = 20;
+        hive->max_bees_in_hive = 4;
+        hive->bees_in_hive = 2;
         hive->queen_alive = 1;
         hive->frame_signal = 0;
 	hive->bees_entered=0;
@@ -236,7 +236,8 @@ int main() {
                 cleanup();
                 exit(EXIT_FAILURE);
                 }
-
+	
+	usleep(5000000);
         }
 
 	while(running) {
@@ -284,7 +285,6 @@ int main() {
 	}
 
 	cleanup();
-	//finalize_log();
 	printf("Symulacja została zakończona.\n");
 	
 	return 0;

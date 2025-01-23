@@ -8,12 +8,10 @@ int main() {
     pid_t pid = fork();
 
     if (pid == 0) {
-        // Proces potomny - uruchomienie programu
         execl("./beehive", "./beehive", NULL);
         perror("Błąd uruchamiania programu");
         exit(EXIT_FAILURE);
     } else if (pid > 0) {
-        // Proces macierzysty - wysyłanie sygnałów
         sleep(5);
 
         printf("Wysyłanie sygnału SIGINT do programu\n");
