@@ -30,9 +30,13 @@ void queen_process() {
         	}
 
 		if (!running) {
-			pthread_mutex_unlock(&hive->mutex);
+			if (pthread_mutex_unlock(&hive->mutex) != 0) {
+				perror("Błąd podczas odblokowywania mutexa w queen_process");
+			}
 			sb.sem_op=1;
-			semop(sem_id, &sb, 1);
+			if (semop(sem_id, &sb, 1) == -1) {
+				perror("Błąd podczas zwalniania semfora w queen_process");
+			}
 			break;
 		}
 
