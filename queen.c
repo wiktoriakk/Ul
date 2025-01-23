@@ -9,7 +9,7 @@
 extern int running;
 
 void queen_process() {
-	while (running) {
+	while (running && hive->queen_alive) {
 		struct sembuf sb = {0, -1, 0};
 		while (semop(sem_id, &sb, 1) == -1) {
 			if (errno == EINTR) {
@@ -29,6 +29,13 @@ void queen_process() {
             		exit(EXIT_FAILURE);
         	}
 
+		if (!running) {
+			pthread_mutex_unlock(&hive->mutex);
+			sb.sem_op=1;
+			semop(sem_id, &sb, 1);
+			break;
+		}
+
 		//zmiana ramek
                 if (hive->frame_signal == 1) {
                         printf("Królowa zauważyła dodanie ramek. Maksymalna liczba pszczół: %d\n", hive->max_population);
@@ -38,86 +45,50 @@ void queen_process() {
 			hive->frame_signal = 0;  	
                 }
 		
-		//sprawdzenie liczby żywych robotnic
-		int alive_workers=0;
-		for(int i=1;i<hive->total_bees;i++) {
-			if (!hive->bees[i].dead && hive->bees[i].type == 'W') {
-				alive_workers++;
-			}
-		}
-		if (alive_workers == 0) {
-			printf("Brak robotnic. Ul umiera!\n");
-			hive->queen_alive=0;
-			running=0;
-			
-			if (pthread_mutex_unlock(&hive->mutex) != 0) {
-				perror("Błąd podczas odblokowywania mutexu w queen_process");
-			}
+		int available_space = hive->max_bees_in_hive - hive->bees_in_hive;
+	
 
-			sb.sem_op=1;
-			if (semop(sem_id, &sb, 1) == -1) {
+		if (hive->total_bees >= hive->max_population || available_space <= 0) {
+		    printf("Ul osiągnął maksymalną populację lub brak miejsca. Kończenie symulacji.\n");
+    			running = 0;
+			
+    			if (pthread_mutex_unlock(&hive->mutex) != 0) {
+				perror("Błąd podczas odblokowywania mutexa w queen_process");
+			}
+            		sb.sem_op = 1;
+            		if (semop(sem_id, &sb, 1) == -1) {
 				perror("Błąd podczas zwalniania semafora w queen_process");
 				exit(EXIT_FAILURE);
 			}
-			break;
+            		break;
 		}
-		
-		//wybór nowej królowej
-                if(!hive->queen_alive) {
-                        printf("Królowa umarła. Szukanie nowej królowej...\n");
-			bool new_queen_found= false;
-
-                        for (int i=1; i<hive->total_bees; i++) {
-                                if (hive->bees[i].type == 'W') {
-                                        hive->bees[i].type = 'Q';
-                                        hive->queen_alive = 1;
-					hive->bees[i].age = 0;
-                                        printf("Nowa królowa: pszczoła %d\n", hive->bees[i].id);
-					new_queen_found=true;
-                                        break;
-                                }
-                        }
-
-			if (!new_queen_found) {
-				printf("Brak robotnic do wyboru nowej królowej. Ul umiera!\n");
-				running=0;
-				sb.sem_op=1;
-				if (semop(sem_id, &sb, 1) == -1) {
-					perror("Błąd podczas zwalniania semafora w queen_process");
-					exit(EXIT_FAILURE);
-				}
-				break;
-			}
+					
 		//składanie jaj
-		} else {
-			if (hive->total_bees >= hive->max_population) {
-				printf("\033[33mKrólowa nie może złożyć jaj: maksymalna populacja osiągnięta.\033[0m\n");
-				//continue;
-			} else if (hive->bees_in_hive < hive->max_bees_in_hive) {
-                        		int eggs = rand() % 10 + 1;
-                        		int available_space = hive->max_bees_in_hive - hive->bees_in_hive;
-			
-					if (eggs > available_space) {
-						eggs = available_space;
-					}
+			if (available_space > 0) {
+				 int eggs = rand() % 10 + 1;
+        			    if (eggs > available_space) {
+	                	eggs = available_space;
+            		}
 
-					for (int i=0; i<eggs && hive->total_bees < hive->max_population; i++) {
-						hive->bees[hive->total_bees].id=hive->total_bees;
-						hive->bees[hive->total_bees].type='W';
-						hive->bees[hive->total_bees].age=0;
-						hive->bees[hive->total_bees].visits=0;
-						hive->bees[hive->total_bees].Ti=(rand()%5+1)*1000;
-						hive->bees[hive->total_bees].outside=false;
-						hive->bees[hive->total_bees].dead=false;
-						hive->total_bees++;
-						hive->bees_in_hive++;
+
+    					for (int i = 0; i < eggs; i++) {
+        				hive->bees[hive->total_bees].id = hive->total_bees;
+        				hive->bees[hive->total_bees].type = 'W';
+        				hive->bees[hive->total_bees].age = 0;
+        				hive->bees[hive->total_bees].visits = 0;
+        				hive->bees[hive->total_bees].Ti = (rand() % 5 + 1) * 1000;
+        				hive->bees[hive->total_bees].outside = false;
+        				hive->bees[hive->total_bees].dead = false;
+        				hive->total_bees++;
+    					}
+
+					    hive->eggs_laid += eggs;
+    						printf("Królowa złożyła %d jaj. Aktualna liczba pszczół: %d\n", eggs, hive->total_bees);
+					}	 else {
+    						printf("Królowa nie może złożyć jaj: brak miejsca lub osiągnięto maksymalną populację.\n");
 					}
-					hive->eggs_laid += eggs;
-				
-                        		printf("\033[34mKrólowa złożyła %d jaj. Aktualna liczba pszczół: %d\033[0m\n", eggs, hive->total_bees);                		
-			}
                    
-		}
+		
 
 		if (pthread_mutex_unlock(&hive->mutex) != 0) {
 			perror("Błąd podczas odblokowywania mutexu w queen_process");\
@@ -139,4 +110,6 @@ void queen_process() {
 	}
 
 	printf("Królowa zakończyła pracę.\n");
+	fflush(stdout);
+	exit(0);
 }

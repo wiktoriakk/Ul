@@ -23,6 +23,7 @@ typedef struct {
 	int Ti; //czas pobytu w ulu
 	bool outside; //czy pszczoła jest poza ulem (true-tak, false-nie)
 	bool dead; //czy pszczoła jest martwa
+	pid_t process_id; //pid procesu reprezentującego pszczołę
 } Bee;
 
 //struktura ula
@@ -51,7 +52,6 @@ extern Beehive *hive; //wskaźnik na strukturę ula w pamięci współdzielonej
 
 //deklaracje funkcji procesów
 void queen_process(); //proces królowej 
-void worker_process(); //proces robotnicy
 void beekeeper_process(); //proces pszczelarza
 void monitor_process(); //proces monitorowania stanu ula
 

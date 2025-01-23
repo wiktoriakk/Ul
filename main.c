@@ -7,16 +7,25 @@
 #include <sys/sem.h>
 #include <signal.h>
 #include "beehive.h"
-#include"entrances.h"
-#include<errno.h>
-#include<pthread.h>
+#include "entrances.h"
+#include <errno.h>
+#include <pthread.h>
+#include "bee.h"
 
 //zmienne globalne
 int running = 1;
 int shm_id;
 int sem_id;
 Beehive *hive;
-pid_t pids[4];
+pid_t pids[3];
+
+void handle_signal(int signo) {
+    if (signo == SIGTERM) {
+        printf("Proces (PID: %d) otrzymał sygnał zakończenia.\n", getpid());
+        fflush(stdout);
+        exit(0);
+    }
+}
 
 //funkcja czyszcząca - zwalniająca zasoby
 void cleanup() {
@@ -26,17 +35,20 @@ void cleanup() {
  	destroy_entrance(&hive->entrance1);
         destroy_entrance(&hive->entrance2);
 
-	printf("Odblokowywanie mutexa...\n");
-	if (pthread_mutex_trylock(&hive->mutex) == 0) {
-		pthread_mutex_unlock(&hive->mutex);
-	}
+   	printf("Usuwanie globalnego semafora...\n");
+    	destroy_global_semaphore();	
+	
+	        printf("Odblokowywanie mutexa...\n");
+        if (pthread_mutex_trylock(&hive->mutex) == 0) {
+                pthread_mutex_unlock(&hive->mutex);
+        }
 
-	printf("Niszczenie mutexa..\n");
-	if (pthread_mutex_destroy(&hive->mutex) != 0) {
+        printf("Niszczenie mutexa..\n");
+        if (pthread_mutex_destroy(&hive->mutex) != 0) {
                 perror("Błąd niszczenia mutexa");
         }
 
-	printf("Odłączanie pamięci współdzielonej...\n");
+  	printf("Odłączanie pamięci współdzielonej...\n");
 	if (shmdt(hive) == -1) {
 		perror("Błąd podczas odłączania pamięci współdzielonej");
 	}
@@ -45,12 +57,7 @@ void cleanup() {
 	if (shmctl(shm_id, IPC_RMID, NULL) == -1) {
 		perror("Błąd podczas usuwania pamieci współdzielonej");
 	}
-	
-	printf("Usuwanie semafora...\n");
-	if (semctl(sem_id, 0, IPC_RMID) == -1) {
-		perror("Błąd podczas usuwania semafora");
-	}
-
+	        
 	printf("Zasoby zostały zwolnione.\n");
 }
 
@@ -81,7 +88,7 @@ void validate_hive(Beehive *hive) {
                 cleanup();
 		exit(EXIT_FAILURE);
         }
-        if (hive->max_bees_in_hive >= (hive->total_bees / 2)) {
+        if (hive->max_bees_in_hive >= hive->total_bees / 2) {
                 fprintf(stderr, "Błąd: Maksymalna liczba pszczół w ulu musi być mniejsza niż połowa początkowej liczby pszczół.\n");
                 cleanup();
 		exit(EXIT_FAILURE);
@@ -89,9 +96,11 @@ void validate_hive(Beehive *hive) {
 }
 
 //funkcja uruchamiająca procesy
-pid_t start_process(void (*process_func)()) {
+pid_t start_process(void (*process_func)(), const char *process_name) {
 	pid_t pid = fork();
 	if (pid == 0) {
+		signal(SIGINT, SIG_IGN);
+		printf("Proces %s rozpoczął działanie (PID: %d).\n", process_name, getpid());
 		process_func();	
 		exit(0);
 	} else if (pid<0) {
@@ -99,6 +108,7 @@ pid_t start_process(void (*process_func)()) {
 		cleanup();
 		exit(EXIT_FAILURE);
 	}
+	printf("Proces %s uruchomiony (PID: %d).\n", process_name, pid);
 	return pid;
 }
 
@@ -118,10 +128,10 @@ int main() {
 	}
 
 	//inicjalizacja ula
-        hive->total_bees = 10;
-        hive->max_population = 20;
-        hive->max_bees_in_hive = 4;
-        hive->bees_in_hive = 3;
+        hive->total_bees = 50;
+       	hive->max_population = 100;
+        hive->max_bees_in_hive = 24;
+        hive->bees_in_hive = 1;
         hive->queen_alive = 1;
         hive->frame_signal = 0;
 	hive->bees_entered=0;
@@ -129,33 +139,11 @@ int main() {
 	hive->eggs_laid=0;
 
 	validate_hive(hive);
-
-	//inicjalizacja pszczół
-        for (int i=0; i<hive->total_bees; i++) {
-		hive->bees[i].id = i;
-                hive->bees[i].type = (i==0) ? 'Q' : 'W';
-                hive->bees[i].age = 0;
-                hive->bees[i].visits = 0;
-                hive->bees[i].Ti = (rand() % 1 + 1)* 1000;
-		hive->bees[i].outside = (i >= hive->bees_in_hive);
-		hive->bees[i].dead=false;
-	}
        
 	//inicjalizacja wejść
 	init_entrance(&hive->entrance1);
     	init_entrance(&hive->entrance2);
-        
-	sem_id=semget(IPC_PRIVATE, 1, IPC_CREAT | 0666);
-	if (sem_id < 0) {
-		perror("Błąd podczas tworzenia semafora");
-		cleanup();
-		exit(EXIT_FAILURE);
-	}
-	if (semctl(sem_id, 0, SETVAL, 1) == -1) {
-		perror("Błąd podczas ustawiania wartości semafora");
-		cleanup();
-		exit(EXIT_FAILURE);
-	}
+        init_global_semaphore();
 
 	if (pthread_mutex_init(&hive->mutex, NULL) != 0) {
 		perror("Błąd podczas inicjalizacji mutexa");
@@ -180,12 +168,27 @@ int main() {
 		exit(EXIT_FAILURE);
 	}
 
-	pids[0]=start_process(queen_process);
-	pids[1]=start_process(worker_process);
-	pids[2]=start_process(beekeeper_process);
-	pids[3]=start_process(monitor_process);
+	pids[0]=start_process(queen_process, "królowa");
+	pids[1]=start_process(beekeeper_process, "pszczelarz");
+	pids[2]=start_process(monitor_process, "monitor");
 
-	int terminate_monitoring=0;
+	//inicjalizacja pszczół
+        for (int i=0; i<hive->total_bees; i++) {
+                hive->bees[i].id = i;
+                hive->bees[i].type = (i==0) ? 'Q' : 'W';
+                hive->bees[i].age = 0;
+                hive->bees[i].visits = 0;
+                hive->bees[i].Ti = (rand() % 3 + 1)* 1000;
+                hive->bees[i].outside = (i >= hive->bees_in_hive);
+                hive->bees[i].dead=false;
+
+        if (start_bee_process(&hive->bees[i]) == -1) {
+                perror("Błąd podczas tworzenia procesu pszczoły");
+                cleanup();
+                exit(EXIT_FAILURE);
+                }
+
+        }
 
 	while(running) {
 
@@ -196,46 +199,41 @@ int main() {
 			}
 		}
 
-		if (alive_bees==0) {
-			printf("Wszystkie pszczoły umarły. Kończenie symulacji.\n");
-			terminate_monitoring=1;
-		}
-
-		if (hive->queen_alive == 0) {
-			printf("Królowa umarła. Kończenie symulacji.\n");
-			terminate_monitoring=1;
-		}
-
-
-		if (hive->bees_in_hive == 0) {
-			printf("Ul zakończył pracę.\n");
-			terminate_monitoring=1;
-		}
-
-		if (terminate_monitoring) {
-			printf("Czekanie na zakończenie procesu monitotowania...\n");
+		if (alive_bees == 0 || hive->queen_alive == 0 || hive->bees_in_hive == 0) {
+			printf("Ul umiera!\n");
 			running=0;
-			sleep(2);
 		}
+
 		sleep(1);
 	}
-	
-	printf("Zatrzymywanie procesów potomnych...\n");
-	for (int i = 0; i < 4; i++) {
+
+	// Zatrzymywanie procesów pszczół
+        for (int i = 0; i < hive->total_bees; i++) {
+                if (kill(hive->bees[i].process_id, SIGTERM) == -1) {
+                perror("Błąd podczas wysyłania SIGTERM procesu pszczoły");
+                } 
+
+	if (waitpid(hive->bees[i].process_id, NULL, 0) == -1) {
+                perror("Błąd podczas oczekiwania na zakończenie procesu pszczoły");
+                } else {
+                        printf("Proces pszczoły %d zakończony.\n", hive->bees[i].id);
+                }
+       
+        }	
+
+	printf("Zatrzymywanie procesów królowej, pszczelarza i monitora...\n");
+	for (int i = 0; i < 3; i++) {
     		if (kill(pids[i], SIGTERM) == -1) {
         		perror("Błąd podczas wysyłania SIGTERM do procesu potomnego");
     		}
-	}
 
-	int status;
-	for (int i = 0; i < 4; i++) {
-    		if (waitpid(pids[i], &status, 0) == -1) {
+    		if (waitpid(pids[i], NULL, 0) == -1) {
         		perror("Błąd podczas oczekiwania na zakończenie procesu potomnego");
     	} else {
-        	printf("Proces potomny PID %d zakończony. Kod wyjścia: %d\n", pids[i], WEXITSTATUS(status));
+        	printf("Proces potomny PID %d zakończony.\n", pids[i]);
     		}
 	}
-	
+
 	cleanup();
 	printf("Symulacja została zakończona.\n");
 	
